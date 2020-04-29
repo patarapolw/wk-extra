@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@typegoose/typegoose": "^7.0.0",
+    "@types/js-yaml": "^3.12.3",
+    "@types/mongoose": "^5.7.14",
+    "js-yaml": "^3.13.1",
+    "mongoose": "^5.9.10"
+  },
+  "devDependencies": {
+    "@types/node": "^13.13.4",
+    "axios": "^0.19.2",
+    "typescript": "^3.8.3"
+  }
+}
