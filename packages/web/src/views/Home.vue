@@ -26,8 +26,8 @@ export default class Home extends Vue {
   apiKey = ''
 
   get email () {
-    const u = this.$store.state.user
-    return u.email as string
+    const u = this.$store.state.settings.user
+    return u ? u.email as string : null
   }
 
   doLogin () {
@@ -39,8 +39,9 @@ export default class Home extends Vue {
   async onLogin () {
     if (this.email && this.apiKey) {
       localStorage.setItem(`wk-apiKey-${this.email}`, this.apiKey)
-      this.$store.commit('wanikani/setApiKey', this.apiKey)
       this.$store.dispatch('wanikani/doCache')
+    } else {
+      firebase.auth().signOut()
     }
   }
 }

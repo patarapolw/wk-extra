@@ -1,5 +1,5 @@
 <template lang="pug">
-article#Home
+article#Random
   .columns(style="width: 100%; margin-top: 1em;")
     .column.is-6
       .item-display
@@ -82,8 +82,8 @@ article#Home
 
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator'
-import { AxiosInstance } from 'axios'
 import { speak } from '@/assets/util'
+import { AxiosInstance } from 'axios'
 
 @Component
 export default class Random extends Vue {
@@ -108,37 +108,34 @@ export default class Random extends Vue {
   speak = speak
 
   get ids () {
-    return (this.$store.state['wanikani/items'] || []).map((it: any) => it.id)
+    return (this.$store.state.wanikani.items || []).map((it: any) => it.id)
   }
 
-  created () {
+  async created () {
     this.loadKanji()
     this.loadVocab()
     this.loadSentence()
   }
 
-  async getApi () {
-    return await this.$store.dispatch('getApi') as AxiosInstance
-  }
-
   @Watch('ids')
   async loadKanji () {
-    const api = await this.getApi()
-    this.kanji.item = (await api.post('/api/kanji/random', { ids: this.ids })).data.entry
+    console.log(this.ids)
+    const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
+    this.$set(this.kanji, 'item', (await api.post('/api/character/random', { ids: this.ids })).data.entry)
     await this.getQuizStatus(this.kanji)
   }
 
   @Watch('ids')
   async loadVocab () {
-    const api = await this.getApi()
-    this.vocab.item = (await api.post('/api/vocab/random', { ids: this.ids })).data.entry
+    const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
+    this.$set(this.vocab, 'item', (await api.post('/api/vocab/random', { ids: this.ids })).data.entry)
     await this.getQuizStatus(this.vocab)
   }
 
   @Watch('ids')
   async loadSentence () {
-    const api = await this.getApi()
-    this.sentence.item = (await api.post('/api/sentence/random', { ids: this.ids })).data.ja
+    const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
+    this.$set(this.sentence, 'item', (await api.post('/api/sentence/random', { ids: this.ids })).data.ja)
     await this.getQuizStatus(this.sentence)
   }
 
@@ -189,7 +186,7 @@ export default class Random extends Vue {
 </script>
 
 <style lang="scss">
-#Home {
+#Random {
   display: flex;
   flex-direction: column;
   align-items: center;

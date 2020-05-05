@@ -1,9 +1,6 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import { MutationTree, ActionTree, Module } from 'vuex'
 import axios, { AxiosInstance } from 'axios'
-import { SnackbarProgrammatic as Snackbar, LoadingProgrammatic as Loading } from 'buefy'
-
-Vue.use(Vuex)
+import { listenToApi } from './axios'
 
 export interface IWkResource<T = any> {
   id: number
@@ -31,134 +28,78 @@ export interface IWkError {
   code: number
 }
 
-let loading: {
-  close(): any
-  requestEnded?: boolean
-} | null = null
-let requestTimeout: number | null = null
+const state = {
+  items: null as {
+    id: number
+    srsLevel: number
+  }[] | null
+}
 
-const store = new Vuex.Store({
-  state: {
-    apiKey: '',
-    items: null as {
-      id: number
-      srsLevel: number
-    }[] | null
-  },
-  mutations: {
-    setApiKey (state, apiKey) {
-      state.apiKey = apiKey
-    },
-    setCache (state, items) {
-      Vue.set(state, 'items', items)
+const mutations: MutationTree<typeof state> = {
+  setItems (state, items) {
+    state.items = items
+  }
+}
+
+const actions: ActionTree<typeof state, any> = {
+  async getApi (_, silent = false) {
+    const store = (await import('.')).default
+
+    const api = axios.create({
+      baseURL: 'https://api.wanikani.com/v2/',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(`wk-apiKey-${store.state.settings.user.email}`) || ''}`
+      }
+    })
+
+    if (!silent) {
+      listenToApi(api)
     }
+
+    return api
   },
-  getters: {
-    wkApi (state, silent = false) {
-      const api = axios.create({
-        baseURL: 'https://api.wanikani.com/v2/',
-        headers: {
-          Authorization: `Bearer ${state.apiKey}`
-        }
-      })
+  async doCache ({ state, commit, dispatch }) {
+    if (!state.items) {
+      const wkApi = await dispatch('getApi') as AxiosInstance
+      let nextUrl = '/assignments'
+      const allData: {
+        id: number
+        srsLevel: number
+      }[] = []
 
-      if (!silent) {
-        api.interceptors.request.use((config) => {
-          if (!loading) {
-            if (requestTimeout) {
-              clearTimeout(requestTimeout)
-              requestTimeout = null
-            }
-
-            requestTimeout = setTimeout(() => {
-              if (!loading) {
-                loading = Loading.open({
-                  isFullPage: true,
-                  canCancel: true,
-                  onCancel: () => {
-                    if (loading && !loading.requestEnded) {
-                      Snackbar.open('API request is loading in background.')
-                    }
-                  }
-                })
-              }
-            }, 1000)
+      while (true) {
+        const r = await wkApi.get<IWkCollection<IWkResource<{
+          subject_id: number
+          srs_stage: number
+        }>>>(nextUrl, {
+          params: {
+            unlocked: 'true'
           }
-
-          return config
         })
 
-        api.interceptors.response.use((config) => {
-          if (loading) {
-            loading.requestEnded = true
-            loading.close()
-            loading = null
-          }
-
-          if (requestTimeout) {
-            clearTimeout(requestTimeout)
-            requestTimeout = null
-          }
-
-          return config
-        }, (err) => {
-          if (loading) {
-            loading.close()
-            loading = null
-          }
-
-          if (requestTimeout) {
-            clearTimeout(requestTimeout)
-            requestTimeout = null
-          }
-
-          console.error(JSON.stringify(err))
-
-          Snackbar.open(err.message)
-          return err
+        r.data.data.map((d) => {
+          allData.push({
+            id: d.data.subject_id,
+            srsLevel: d.data.srs_stage
+          })
         })
-      }
 
-      return api
-    }
-  },
-  actions: {
-    async doCache ({ state, commit, getters }) {
-      if (!state.items) {
-        const wkApi = getters('wkApi') as AxiosInstance
-        let nextUrl = '/assignments'
-        const allData: {
-          id: number
-          srsLevel: number
-        }[] = []
-
-        while (true) {
-          const r = await wkApi.get<IWkCollection<IWkResource<{
-            subject_id: number
-            srs_stage: number
-          }>>>(nextUrl, {
-            params: {
-              unlocked: 'true'
-            }
-          })
-
-          r.data.data.map((d) => {
-            allData.push({
-              id: d.data.subject_id,
-              srsLevel: d.data.srs_stage
-            })
-          })
-
-          nextUrl = r.data.pages.next_url || ''
-          if (!nextUrl) {
-            break
-          }
+        nextUrl = r.data.pages.next_url || ''
+        if (!nextUrl) {
+          break
         }
-
-        commit('setCache', allData)
       }
+
+      commit('setItems', allData)
     }
   }
-})
+}
 
-export default store
+const module: Module<typeof state, any> = {
+  namespaced: true,
+  state,
+  mutations,
+  actions
+}
+
+export default module

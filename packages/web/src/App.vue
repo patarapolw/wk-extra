@@ -14,7 +14,7 @@ export default class App extends Vue {
   isLoading = true
 
   get user () {
-    return this.$store.state.user
+    return this.$store.state.settings.user
   }
 
   get layout () {
@@ -24,10 +24,6 @@ export default class App extends Vue {
 
   created () {
     this.onUserChange()
-  }
-
-  async getApi () {
-    return await this.$store.dispatch('getApi')
   }
 
   @Watch('user')

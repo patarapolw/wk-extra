@@ -18,14 +18,14 @@ const router = new VueRouter({
     {
       path: '/',
       component: () => import(/* webpackChunkName: "[request]" */ '../views/Home.vue')
+    },
+    {
+      path: '/random',
+      component: () => import(/* webpackChunkName: "[request]" */ '../views/Random.vue'),
+      meta: {
+        layout: 'App'
+      }
     }
-    // {
-    //   path: '/random',
-    //   component: () => import(/* webpackChunkName: "[request]" */ '../views/Random.vue'),
-    //   meta: {
-    //     layout: 'App'
-    //   }
-    // },
     // {
     //   path: '/quiz',
     //   component: () => import(/* webpackChunkName: "[request]" */ '../views/Quiz.vue'),
