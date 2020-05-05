@@ -1,12 +1,35 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import axios from 'axios'
-import { User } from 'firebase/app'
+import axios, { AxiosInstance } from 'axios'
 import { SnackbarProgrammatic as Snackbar, LoadingProgrammatic as Loading } from 'buefy'
 
-import WaniKaniModule from './wanikani'
-
 Vue.use(Vuex)
+
+export interface IWkResource<T = any> {
+  id: number
+  integer: string
+  url: string
+  data_updated_at: string // Date
+  data: T
+}
+
+export interface IWkCollection<T = any> {
+  object: string
+  url: string
+  pages: {
+    next_url?: string
+    previous_url?: string
+    per_page: number
+  }
+  total_count: number
+  data_updated_at: string // Date
+  data: T[]
+}
+
+export interface IWkError {
+  error: string
+  code: number
+}
 
 let loading: {
   close(): any
@@ -15,46 +38,29 @@ let loading: {
 let requestTimeout: number | null = null
 
 const store = new Vuex.Store({
-  modules: {
-    wanikani: WaniKaniModule
-  },
   state: {
-    user: null as User | null,
-    allowChinese: false,
-    cutOffSrsLevel: [0, 9],
-    lastStatus: 200
+    apiKey: '',
+    items: null as {
+      id: number
+      srsLevel: number
+    }[] | null
   },
   mutations: {
-    setUser (state, user) {
-      state.user = user
+    setApiKey (state, apiKey) {
+      state.apiKey = apiKey
     },
-    setAllowChinese (state, bool) {
-      state.allowChinese = bool
-    },
-    setCutoffSrsLevel (state, [min, max]) {
-      Vue.set(state, 'cutoffSrsLevel', [min, max])
-    },
-    setLastStatus (state, status) {
-      state.lastStatus = status
+    setCache (state, items) {
+      Vue.set(state, 'items', items)
     }
   },
-  actions: {
-    async getApi ({ state, commit }, silent = false) {
+  getters: {
+    wkApi (state, silent = false) {
       const api = axios.create({
-        validateStatus: (status) => {
-          commit('setLastStatus', status)
-
-          if (status === 401) {
-            return true
-          }
-
-          return status >= 200 && status < 300 // default
+        baseURL: 'https://api.wanikani.com/v2/',
+        headers: {
+          Authorization: `Bearer ${state.apiKey}`
         }
       })
-
-      if (state.user) {
-        api.defaults.headers.Authorization = `Bearer ${await state.user.getIdToken()}`
-      }
 
       if (!silent) {
         api.interceptors.request.use((config) => {
@@ -114,6 +120,43 @@ const store = new Vuex.Store({
       }
 
       return api
+    }
+  },
+  actions: {
+    async doCache ({ state, commit, getters }) {
+      if (!state.items) {
+        const wkApi = getters('wkApi') as AxiosInstance
+        let nextUrl = '/assignments'
+        const allData: {
+          id: number
+          srsLevel: number
+        }[] = []
+
+        while (true) {
+          const r = await wkApi.get<IWkCollection<IWkResource<{
+            subject_id: number
+            srs_stage: number
+          }>>>(nextUrl, {
+            params: {
+              unlocked: 'true'
+            }
+          })
+
+          r.data.data.map((d) => {
+            allData.push({
+              id: d.data.subject_id,
+              srsLevel: d.data.srs_stage
+            })
+          })
+
+          nextUrl = r.data.pages.next_url || ''
+          if (!nextUrl) {
+            break
+          }
+        }
+
+        commit('setCache', allData)
+      }
     }
   }
 })

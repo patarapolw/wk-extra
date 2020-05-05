@@ -1,0 +1,25 @@
+@font-face {
+  font-family: 'HanaMin';
+  src: url('~@/assets/fonts/HanaMinA.ttf') format('truetype'),
+    url('~@/assets/fonts/HanaMinB.ttf') format('truetype');
+}
+
+.font-han {
+  font-family: 'HanaMin', sans-serif;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.clickable {
+  cursor: pointer;
+
+  &:hover {
+    color: blue;
+  }
+}
+
+.tag + .tag {
+  margin-left: 1em;
+}

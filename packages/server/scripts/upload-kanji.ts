@@ -1,9 +1,7 @@
-import fs from 'fs'
-
 import mongoose from 'mongoose'
-import yaml from 'js-yaml'
 
 import { WkKanjiModel } from '../src/db/mongo'
+import { getKanji } from './wk/get'
 
 async function main () {
   await mongoose.connect(process.env.MONGO_URI!, {
@@ -13,14 +11,10 @@ async function main () {
     useUnifiedTopology: true
   })
 
-  const kanjiSrc = yaml.safeLoad(fs.readFileSync('resources/kanji.yaml', 'utf8')) as {
-    level: number
-    characters: string
-    slug: string
-  }[]
+  const kanjiSrc = await getKanji()
 
   for (const vs of chunks(kanjiSrc.map((v) => ({
-    _id: v.slug,
+    _id: v.id,
     entry: v.characters,
     level: v.level
   })), 1000)) {

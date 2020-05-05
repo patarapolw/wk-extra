@@ -1,9 +1,7 @@
-import fs from 'fs'
-
 import mongoose from 'mongoose'
-import yaml from 'js-yaml'
 
 import { WkSentenceModel, WkVocabModel } from '../src/db/mongo'
+import { getVocab } from './wk/get'
 
 async function main () {
   await mongoose.connect(process.env.MONGO_URI!, {
@@ -13,32 +11,24 @@ async function main () {
     useUnifiedTopology: true
   })
 
-  const vocabSrc = yaml.safeLoad(fs.readFileSync('resources/vocabulary.yaml', 'utf8')) as {
-    level: number
-    characters: string
-    slug: string
-    sentences: {
-      en: string
-      ja: string
-    }[]
-  }[]
+  const vocabSrc = await getVocab()
 
   const sentences = new Map<string, {
     en: string
     ja: string
-    vocab: string[]
+    vocab: number[]
   }>()
 
   vocabSrc.map((v) => {
     v.sentences.map((s) => {
       const ss = sentences.get(s.ja)
       if (ss) {
-        ss.vocab.push(v.slug)
+        ss.vocab.push(v.id)
         sentences.set(s.ja, ss)
       } else {
         sentences.set(s.ja, {
           ...s,
-          vocab: [v.slug]
+          vocab: [v.id]
         })
       }
     })
@@ -49,7 +39,7 @@ async function main () {
   }
 
   for (const vs of chunks(vocabSrc.map((v) => ({
-    _id: v.slug,
+    _id: v.id,
     entry: v.characters,
     level: v.level
   })), 1000)) {

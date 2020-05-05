@@ -8,17 +8,27 @@ import 'firebase/analytics'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import { humanizeDuration } from './util'
+import { humanizeDuration } from './assets/util'
 
 import './plugins/buefy'
 import './plugins/fontawesome'
 import './plugins/context'
+import '@/assets/main.scss'
 
 firebase.initializeApp(JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG!))
 firebase.analytics()
 
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
   store.commit('setUser', user)
+
+  if (user && user.email) {
+    const data = localStorage.getItem(`wk-apiKey-${user.email}`)
+    if (data) {
+      store.commit('setApiKey', data)
+    }
+  } else {
+    store.commit('setApiKey', null)
+  }
 })
 
 Vue.filter('format', (v: any) => {

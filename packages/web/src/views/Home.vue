@@ -9,17 +9,40 @@ section#Home
           a(href="https://wanikani.com" target="_blank" rel="noopener") WaniKani.com
           | .
       b-input(placeholder="Please enter your API key" v-model="apiKey" style="margin-bottom: 1em;")
-      b-button(style="width: 100%;" :disabled="!apiKey")
+      b-button(style="width: 100%;" :disabled="!apiKey" @click="doLogin()")
         fontawesome(:icon="['fab', 'google']" style="margin-right: 1em;")
         span Login with Google
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
+import { Vue, Component, Watch } from 'vue-property-decorator'
+import firebase from 'firebase/app'
+
+import 'firebase/auth'
+import 'firebase/firestore'
 
 @Component
 export default class Home extends Vue {
   apiKey = ''
+
+  get email () {
+    const u = this.$store.state.user
+    return u.email as string
+  }
+
+  doLogin () {
+    const provider = new firebase.auth.GoogleAuthProvider()
+    firebase.auth().signInWithPopup(provider)
+  }
+
+  @Watch('email')
+  async onLogin () {
+    if (this.email && this.apiKey) {
+      localStorage.setItem(`wk-apiKey-${this.email}`, this.apiKey)
+      this.$store.commit('wanikani/setApiKey', this.apiKey)
+      this.$store.dispatch('wanikani/doCache')
+    }
+  }
 }
 </script>
 
