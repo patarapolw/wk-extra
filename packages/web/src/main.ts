@@ -19,16 +19,7 @@ firebase.initializeApp(JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG!))
 firebase.analytics()
 
 firebase.auth().onAuthStateChanged(async (user) => {
-  store.commit('setUser', user)
-
-  if (user && user.email) {
-    const data = localStorage.getItem(`wk-apiKey-${user.email}`)
-    if (data) {
-      store.commit('setApiKey', data)
-    }
-  } else {
-    store.commit('setApiKey', null)
-  }
+  store.commit('settings/setUser', user)
 })
 
 Vue.filter('format', (v: any) => {

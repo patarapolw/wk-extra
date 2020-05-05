@@ -8,7 +8,7 @@ export default (f: FastifyInstance, _: any, next: () => void) => {
       summary: 'Random sentence from a list of allow vocab',
       body: {
         type: 'object',
-        required: ['id'],
+        required: ['ids'],
         properties: {
           ids: { type: 'array', items: { type: 'integer' } }
         }
