@@ -6,8 +6,8 @@ section.layout
         strong WK
         span Extra
     template(slot="start")
-      b-navbar-item(tag="router-link" to="/quiz") Quiz
       b-navbar-item(tag="router-link" to="/random") Random
+      b-navbar-item(tag="router-link" to="/quiz") Quiz
       b-navbar-item(tag="router-link" to="/character") Character
       b-navbar-item(tag="router-link" to="/vocab") Vocab
       b-navbar-item(tag="router-link" to="/extra") Extra
@@ -22,11 +22,18 @@ section.layout
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import firebase from 'firebase/app'
+
+import 'firebase/auth'
 
 @Component
 export default class AppLayout extends Vue {
   get user () {
     return this.$store.state.user
+  }
+
+  doLogout () {
+    firebase.auth().signOut()
   }
 }
 </script>

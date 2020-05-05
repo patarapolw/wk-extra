@@ -4,6 +4,8 @@ import axios from 'axios'
 import { User } from 'firebase/app'
 import { SnackbarProgrammatic as Snackbar, LoadingProgrammatic as Loading } from 'buefy'
 
+import WaniKaniModule from './wanikani'
+
 Vue.use(Vuex)
 
 let loading: {
@@ -13,16 +15,24 @@ let loading: {
 let requestTimeout: number | null = null
 
 const store = new Vuex.Store({
+  modules: {
+    wanikani: WaniKaniModule
+  },
   state: {
     user: null as User | null,
+    allowChinese: false,
+    cutOffSrsLevel: [0, 9],
     lastStatus: 200
   },
   mutations: {
     setUser (state, user) {
       state.user = user
     },
-    removeUser (state) {
-      state.user = null
+    setAllowChinese (state, bool) {
+      state.allowChinese = bool
+    },
+    setCutoffSrsLevel (state, [min, max]) {
+      Vue.set(state, 'cutoffSrsLevel', [min, max])
     },
     setLastStatus (state, status) {
       state.lastStatus = status
