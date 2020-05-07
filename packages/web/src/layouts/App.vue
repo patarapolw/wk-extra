@@ -9,7 +9,10 @@ section.layout
       b-navbar-item(tag="router-link" to="/random") Random
       b-navbar-item(tag="router-link" to="/quiz") Quiz
       b-navbar-item(tag="router-link" to="/character") Character
-      b-navbar-item(tag="router-link" to="/vocab") Vocab
+      b-navbar-dropdown(label="Vocab" hoverable)
+        b-navbar-item(tag="router-link" to="/jadict") Japanese
+        b-navbar-item(tag="router-link" to="/zhdict") Chinese
+      b-navbar-item(tag="router-link" to="/library") Library
       b-navbar-item(tag="router-link" to="/extra") Extra
       b-navbar-item(tag="router-link" to="/settings") Settings
     template(slot="end" v-if="user")
