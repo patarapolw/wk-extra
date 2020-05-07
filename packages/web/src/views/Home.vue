@@ -15,7 +15,7 @@ section#Home
 </template>
 
 <script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator'
+import { Vue, Component } from 'vue-property-decorator'
 import firebase from 'firebase/app'
 
 import 'firebase/auth'
@@ -33,16 +33,6 @@ export default class Home extends Vue {
   doLogin () {
     const provider = new firebase.auth.GoogleAuthProvider()
     firebase.auth().signInWithPopup(provider)
-  }
-
-  @Watch('email')
-  async onLogin () {
-    if (this.email && this.apiKey) {
-      localStorage.setItem(`wk-apiKey-${this.email}`, this.apiKey)
-      this.$store.dispatch('wanikani/doCache')
-    } else {
-      firebase.auth().signOut()
-    }
   }
 }
 </script>

@@ -42,13 +42,11 @@ const mutations: MutationTree<typeof state> = {
 }
 
 const actions: ActionTree<typeof state, any> = {
-  async getApi (_, silent = false) {
-    const store = (await import('.')).default
-
+  async getApi ({ rootState }, silent = false) {
     const api = axios.create({
       baseURL: 'https://api.wanikani.com/v2/',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem(`wk-apiKey-${store.state.settings.user.email}`) || ''}`
+        Authorization: `Bearer ${localStorage.getItem(`wk-apiKey-${rootState.settings.user.email}`) || ''}`
       }
     })
 

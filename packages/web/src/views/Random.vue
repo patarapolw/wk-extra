@@ -16,9 +16,10 @@ article#Random
         b-loading(:active="!vocab.item" :is-full-page="false")
       center Vocab of the day
   .item-display
-    .font-han.clickable.text-center(style="font-size: 30px; min-width: 3em; min-height: 40px"
-      @contextmenu.prevent="(evt) => $refs.sentenceContextmenu.open(evt)"
-    ) {{sentence.item}}
+    b-tooltip(:label="sentence.translation")
+      .font-han.clickable.text-center(style="font-size: 30px; min-width: 3em; min-height: 40px"
+        @contextmenu.prevent="(evt) => $refs.sentenceContextmenu.open(evt)"
+      ) {{sentence.item}}
     b-loading(:active="!sentence.item" :is-full-page="false")
   center Sentence of the day
   vue-context(ref="kanjiContextmenu" lazy)
@@ -102,6 +103,7 @@ export default class Random extends Vue {
   sentence = {
     type: 'sentence',
     item: null,
+    translation: null,
     id: []
   }
 
@@ -111,7 +113,7 @@ export default class Random extends Vue {
     return (this.$store.state.wanikani.items || []).map((it: any) => it.id)
   }
 
-  async created () {
+  created () {
     this.loadKanji()
     this.loadVocab()
     this.loadSentence()
@@ -135,7 +137,9 @@ export default class Random extends Vue {
   @Watch('ids')
   async loadSentence () {
     const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
-    this.$set(this.sentence, 'item', (await api.post('/api/sentence/random', { ids: this.ids })).data.ja)
+    const r = await api.post('/api/sentence/random', { ids: this.ids })
+    this.$set(this.sentence, 'item', r.data.ja)
+    this.$set(this.sentence, 'translation', r.data.en)
     await this.getQuizStatus(this.sentence)
   }
 

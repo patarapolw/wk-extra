@@ -8,6 +8,8 @@
 
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator'
+import firebase from 'firebase/app'
+import 'firebase/auth'
 
 @Component
 export default class App extends Vue {
@@ -46,6 +48,15 @@ export default class App extends Vue {
       } else if (this.$route.path === '/') {
         this.$router.push('/random')
       }
+    }
+  }
+
+  @Watch('user')
+  async onLogin () {
+    if (this.user) {
+      this.$store.dispatch('wanikani/doCache')
+    } else {
+      firebase.auth().signOut()
     }
   }
 }
