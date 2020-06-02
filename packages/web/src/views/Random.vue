@@ -27,10 +27,10 @@ article#Random
       a(role="button" @click.prevent="loadKanji()") Reload
     li
       a(role="button" @click.prevent="speak(kanji.item, 'ja')") Speak
-    li(v-if="!kanji.id.length")
-      a(role="button" @click.prevent="addToQuiz(kanji)") Add to quiz
-    li(v-else)
-      a(role="button" @click.prevent="removeFromQuiz(kanji)") Remove from quiz
+    //- li(v-if="!kanji.id.length")
+    //-   a(role="button" @click.prevent="addToQuiz(kanji)") Add to quiz
+    //- li(v-else)
+    //-   a(role="button" @click.prevent="removeFromQuiz(kanji)") Remove from quiz
     li
       router-link(:to="{ path: '/vocab', query: { q: kanji.item } }" target="_blank") Search for vocab
     li
@@ -46,10 +46,10 @@ article#Random
       a(role="button" @click.prevent="loadVocab()") Reload
     li
       a(role="button" @click.prevent="speak(vocab.item, 'ja')") Speak
-    li(v-if="!vocab.id.length")
-      a(role="button" @click.prevent="addToQuiz(vocab)") Add to quiz
-    li(v-else)
-      a(role="button" @click.prevent="removeFromQuiz(vocab)") Remove from quiz
+    //- li(v-if="!vocab.id.length")
+    //-   a(role="button" @click.prevent="addToQuiz(vocab)") Add to quiz
+    //- li(v-else)
+    //-   a(role="button" @click.prevent="removeFromQuiz(vocab)") Remove from quiz
     li
       router-link(:to="{ path: '/vocab', query: { q: vocab.item } }" target="_blank") Search for vocab
     li
@@ -65,10 +65,10 @@ article#Random
       a(role="button" @click.prevent="loadSentence()") Reload
     li
       a(role="button" @click.prevent="speak(sentence.item, 'ja')") Speak
-    li(v-if="!sentence.id.length")
-      a(role="button" @click.prevent="addToQuiz(sentence)") Add to quiz
-    li(v-else)
-      a(role="button" @click.prevent="removeFromQuiz(sentence)") Remove from quiz
+    //- li(v-if="!sentence.id.length")
+    //-   a(role="button" @click.prevent="addToQuiz(sentence)") Add to quiz
+    //- li(v-else)
+    //-   a(role="button" @click.prevent="removeFromQuiz(sentence)") Remove from quiz
     li
       router-link(:to="{ path: '/vocab', query: { q: sentence.item } }" target="_blank") Search for vocab
     li
@@ -124,14 +124,14 @@ export default class Random extends Vue {
     console.log(this.ids)
     const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
     this.$set(this.kanji, 'item', (await api.post('/api/character/random', { ids: this.ids })).data.entry)
-    await this.getQuizStatus(this.kanji)
+    // await this.getQuizStatus(this.kanji)
   }
 
   @Watch('ids')
   async loadVocab () {
     const api = await this.$store.dispatch('settings/getApi') as AxiosInstance
     this.$set(this.vocab, 'item', (await api.post('/api/vocab/random', { ids: this.ids })).data.entry)
-    await this.getQuizStatus(this.vocab)
+    // await this.getQuizStatus(this.vocab)
   }
 
   @Watch('ids')
@@ -140,52 +140,52 @@ export default class Random extends Vue {
     const r = await api.post('/api/sentence/random', { ids: this.ids })
     this.$set(this.sentence, 'item', r.data.ja)
     this.$set(this.sentence, 'translation', r.data.en)
-    await this.getQuizStatus(this.sentence)
+    // await this.getQuizStatus(this.sentence)
   }
 
-  async getQuizStatus (_: any) {
-    // const vm = this as any
+  // async getQuizStatus (_: any) {
+  //   const vm = this as any
 
-    // if (this.$store.state.user) {
-    //   const api = await this.getApi()
-    //   const r = await api.post('/api/card/q', {
-    //     cond: {
-    //       item: item.item,
-    //       type: item.type
-    //     },
-    //     projection: { _id: 1 },
-    //     hasCount: false
-    //   })
+  //   if (this.$store.state.user) {
+  //     const api = await this.getApi()
+  //     const r = await api.post('/api/card/q', {
+  //       cond: {
+  //         item: item.item,
+  //         type: item.type
+  //       },
+  //       projection: { _id: 1 },
+  //       hasCount: false
+  //     })
 
-    //   this.$set(vm[item.type], 'id', r.data.result.map((el: any) => el._id))
-    // } else {
-    //   this.$set(vm[item.type], 'id', [])
-    // }
-  }
+  //     this.$set(vm[item.type], 'id', r.data.result.map((el: any) => el._id))
+  //   } else {
+  //     this.$set(vm[item.type], 'id', [])
+  //   }
+  // }
 
-  async addToQuiz (_: any) {
-    // if (this.$store.state.user) {
-    //   const api = await this.getApi()
-    //   await api.put('/api/card/', item)
-    //   this.getQuizStatus(item)
+  // async addToQuiz (_: any) {
+  //   if (this.$store.state.user) {
+  //     const api = await this.getApi()
+  //     await api.put('/api/card/', item)
+  //     this.getQuizStatus(item)
 
-    //   this.$buefy.snackbar.open(`Added ${item.type}: ${item.item} to quiz`)
-    // }
-  }
+  //     this.$buefy.snackbar.open(`Added ${item.type}: ${item.item} to quiz`)
+  //   }
+  // }
 
-  async removeFromQuiz (_: any) {
-    // if (this.$store.state.user) {
-    //   const vm = this as any
+  // async removeFromQuiz (_: any) {
+  //   if (this.$store.state.user) {
+  //     const vm = this as any
 
-    //   const api = await this.getApi()
-    //   await Promise.all(vm[item.type].id.map((i: string) => api.delete('/api/card/', {
-    //     data: { id: i }
-    //   })))
-    //   this.getQuizStatus(item)
+  //     const api = await this.getApi()
+  //     await Promise.all(vm[item.type].id.map((i: string) => api.delete('/api/card/', {
+  //       data: { id: i }
+  //     })))
+  //     this.getQuizStatus(item)
 
-    //   this.$buefy.snackbar.open(`Removed ${item.type}: ${item.item} from quiz`)
-    // }
-  }
+  //     this.$buefy.snackbar.open(`Removed ${item.type}: ${item.item} from quiz`)
+  //   }
+  // }
 }
 </script>
 

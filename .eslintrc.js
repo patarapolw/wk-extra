@@ -23,6 +23,7 @@ module.exports = {
   ],
   rules: {
     'no-unused-vars': 0,
-    camelcase: 0
+    camelcase: 0,
+    'spaced-comment': 0
   }
 }

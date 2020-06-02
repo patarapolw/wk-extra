@@ -1,52 +1,59 @@
-import mongoose from 'mongoose'
-
-import { WkSentenceModel, WkVocabModel } from '../src/db/mongo'
 import { getVocab } from './wk/get'
+import { wkDbInit, wkDb } from '../src/db/local'
 
 async function main () {
-  await mongoose.connect(process.env.MONGO_URI!, {
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
+  wkDbInit()
 
   const vocabSrc = await getVocab()
 
   const sentences = new Map<string, {
     en: string
     ja: string
-    vocab: number[]
+    vocab_id: number
   }>()
 
   vocabSrc.map((v) => {
     v.sentences.map((s) => {
-      const ss = sentences.get(s.ja)
-      if (ss) {
-        ss.vocab.push(v.id)
-        sentences.set(s.ja, ss)
-      } else {
-        sentences.set(s.ja, {
-          ...s,
-          vocab: [v.id]
-        })
-      }
+      sentences.set(s.ja, {
+        ...s,
+        vocab_id: v.id
+      })
     })
   })
 
-  for (const ss of chunks(Array.from(sentences).map(([_, el]) => el), 1000)) {
-    await WkSentenceModel.insertMany(ss)
-  }
+  const insertVocab = wkDb.prepare(/*sql*/`
+  INSERT INTO vocab (id, [entry], [level])
+  VALUES (@id, @entry, @level)
+  `)
+
+  const insertManyVocab = wkDb.transaction((rs: any[]) => {
+    for (const r of rs) {
+      insertVocab.run(r)
+    }
+  })
 
   for (const vs of chunks(vocabSrc.map((v) => ({
-    _id: v.id,
+    id: v.id,
     entry: v.characters,
     level: v.level
   })), 1000)) {
-    await WkVocabModel.insertMany(vs)
+    insertManyVocab(vs)
   }
 
-  mongoose.disconnect()
+  const insertSentence = wkDb.prepare(/*sql*/`
+  INSERT INTO sentence (ja, en, vocab_id)
+  VALUES (@ja, @en, @vocab_id)
+  `)
+
+  const insertManySentence = wkDb.transaction((rs: any[]) => {
+    for (const r of rs) {
+      insertSentence.run(r)
+    }
+  })
+
+  for (const ss of chunks(Array.from(sentences).map(([_, el]) => el), 1000)) {
+    insertManySentence(ss)
+  }
 }
 
 function * chunks<T> (arr: T[], n: number) {
