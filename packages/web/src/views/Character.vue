@@ -203,76 +203,76 @@ export default class Hanzi extends Vue {
     this.$set(this, 'sentences', r.result)
   }
 
-  @Watch('selectedHanzi')
-  async loadHanziStatus () {
-    if (this.selectedHanzi) {
-      const api = await this.getApi()
-      const r = await api.post('/api/card/q', {
-        cond: {
-          item: this.selectedHanzi,
-          type: 'hanzi'
-        },
-        projection: { _id: 1 },
-        hasCount: false
-      })
-      this.$set(this.hanziIds, this.selectedHanzi, !!r.data.result.length)
-    }
-  }
+  // @Watch('selectedHanzi')
+  // async loadHanziStatus () {
+  //   if (this.selectedHanzi) {
+  //     const api = await this.getApi()
+  //     const r = await api.post('/api/card/q', {
+  //       cond: {
+  //         item: this.selectedHanzi,
+  //         type: 'hanzi'
+  //       },
+  //       projection: { _id: 1 },
+  //       hasCount: false
+  //     })
+  //     this.$set(this.hanziIds, this.selectedHanzi, !!r.data.result.length)
+  //   }
+  // }
 
-  @Watch('selectedVocab')
-  async loadVocabStatus () {
-    if (this.selectedVocab) {
-      const api = await this.getApi()
-      const r = await api.post('/api/card/q', {
-        cond: {
-          item: this.selectedVocab,
-          type: 'vocab'
-        },
-        projection: { _id: 1 },
-        hasCount: false
-      })
-      this.$set(this.vocabIds, this.selectedVocab, !!r.data.result.length)
-    }
-  }
+  // @Watch('selectedVocab')
+  // async loadVocabStatus () {
+  //   if (this.selectedVocab) {
+  //     const api = await this.getApi()
+  //     const r = await api.post('/api/card/q', {
+  //       cond: {
+  //         item: this.selectedVocab,
+  //         type: 'vocab'
+  //       },
+  //       projection: { _id: 1 },
+  //       hasCount: false
+  //     })
+  //     this.$set(this.vocabIds, this.selectedVocab, !!r.data.result.length)
+  //   }
+  // }
 
-  @Watch('selectedSentence')
-  async loadSentenceStatus () {
-    if (this.selectedSentence) {
-      const api = await this.getApi()
-      const r = await api.post('/api/card/q', {
-        cond: { item: this.selectedSentence, type: 'sentence' },
-        hasCount: false,
-        projection: {
-          _id: 1
-        }
-      })
-      this.$set(this.sentenceIds, this.selectedSentence, r.data.result.map((d: any) => d._id))
-    }
-  }
+  // @Watch('selectedSentence')
+  // async loadSentenceStatus () {
+  //   if (this.selectedSentence) {
+  //     const api = await this.getApi()
+  //     const r = await api.post('/api/card/q', {
+  //       cond: { item: this.selectedSentence, type: 'sentence' },
+  //       hasCount: false,
+  //       projection: {
+  //         _id: 1
+  //       }
+  //     })
+  //     this.$set(this.sentenceIds, this.selectedSentence, r.data.result.map((d: any) => d._id))
+  //   }
+  // }
 
-  async addToQuiz (item: string, type: string) {
-    const api = await this.getApi()
-    await api.put('/api/card/', { item, type })
-    this.$buefy.snackbar.open(`Added ${type}: ${item} to quiz`)
+  // async addToQuiz (item: string, type: string) {
+  //   const api = await this.getApi()
+  //   await api.put('/api/card/', { item, type })
+  //   this.$buefy.snackbar.open(`Added ${type}: ${item} to quiz`)
 
-    type === 'vocab' ? this.loadVocabStatus() : this.loadHanziStatus()
-  }
+  //   type === 'vocab' ? this.loadVocabStatus() : this.loadHanziStatus()
+  // }
 
-  async removeFromQuiz (item: string, type: string) {
-    const api = await this.getApi()
-    const ids =
-      (type === 'vocab' ? this.vocabIds[item] : this.hanziIds[item]) || []
-    await Promise.all(
-      ids.map((id: string) =>
-        api.delete('/api/card/', {
-          data: { id }
-        })
-      )
-    )
-    this.$buefy.snackbar.open(`Removed ${type}: ${item} from quiz`)
+  // async removeFromQuiz (item: string, type: string) {
+  //   const api = await this.getApi()
+  //   const ids =
+  //     (type === 'vocab' ? this.vocabIds[item] : this.hanziIds[item]) || []
+  //   await Promise.all(
+  //     ids.map((id: string) =>
+  //       api.delete('/api/card/', {
+  //         data: { id }
+  //       })
+  //     )
+  //   )
+  //   this.$buefy.snackbar.open(`Removed ${type}: ${item} from quiz`)
 
-    type === 'vocab' ? this.loadVocabStatus() : this.loadHanziStatus()
-  }
+  //   type === 'vocab' ? this.loadVocabStatus() : this.loadHanziStatus()
+  // }
 }
 </script>
 

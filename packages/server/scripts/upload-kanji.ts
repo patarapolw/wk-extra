@@ -1,27 +1,27 @@
-import mongoose from 'mongoose'
-
-import { WkKanjiModel } from '../src/db/mongo'
 import { getKanji } from './wk/get'
+import { wkDb } from '../src/db/local'
 
 async function main () {
-  await mongoose.connect(process.env.MONGO_URI!, {
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+  const insertKanji = wkDb.prepare(/*sql*/`
+  INSERT INTO kanji (id, [entry], [level])
+  VALUES (@id, @entry, @level)
+  `)
+
+  const insertManyKanji = wkDb.transaction((rs: any[]) => {
+    for (const r of rs) {
+      insertKanji.run(r)
+    }
   })
 
   const kanjiSrc = await getKanji()
 
   for (const vs of chunks(kanjiSrc.map((v) => ({
-    _id: v.id,
+    id: v.id,
     entry: v.characters,
     level: v.level
   })), 1000)) {
-    await WkKanjiModel.insertMany(vs)
+    insertManyKanji(vs)
   }
-
-  mongoose.disconnect()
 }
 
 function * chunks<T> (arr: T[], n: number) {
