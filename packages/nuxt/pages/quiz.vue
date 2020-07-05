@@ -467,7 +467,7 @@ export default class QuizPage extends Vue {
   speak = speak
 
   get email() {
-    const u = this.$store.state.user
+    const u = this.$store.state.auth.user
     return u ? (u.email as string) : undefined
   }
 

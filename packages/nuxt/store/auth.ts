@@ -23,9 +23,7 @@ export const actions: ActionTree<State, RootState> = {
 
     if (user) {
       this.$axios.defaults.headers.authorization = `Bearer ${await user.getIdToken()}`
-      const { email: _email, apiKey, ...settings } = await this.$axios.$get(
-        '/api/user'
-      )
+      const { apiKey, settings } = await this.$axios.$get('/api/user')
 
       commit('wanikani/setApiKey', apiKey)
       commit('settings/updateSettings', settings)
