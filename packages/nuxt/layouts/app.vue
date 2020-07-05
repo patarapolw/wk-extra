@@ -1,48 +1,23 @@
 <template>
   <section class="AppLayout">
-    <b-loading v-if="!isReady" active />
+    <b-loading v-if="!isAppReady" active />
 
-    <nav v-if="isReady" class="vertical-nav">
+    <nav v-if="isAppReady" class="vertical-nav">
       <div class="icon-nav">
-        <nuxt-link to="/random" :class="{ active: $route.path === '/random' }">
-          <fontawesome icon="random" />
-          <span>Random</span>
-        </nuxt-link>
-        <nuxt-link to="/quiz" :class="{ active: $route.path === '/quiz' }">
-          <fontawesome icon="question-circle" />
-          <span>Quiz</span>
-        </nuxt-link>
-        <nuxt-link to="/hanzi" :class="{ active: $route.path === '/hanzi' }">
-          <span class="icon font-hanzi">字</span>
-          <span>Hanzi</span>
-        </nuxt-link>
-        <nuxt-link to="/vocab" :class="{ active: $route.path === '/vocab' }">
-          <span class="icon font-hanzi">词</span>
-          <span>Vocab</span>
-        </nuxt-link>
-        <nuxt-link to="/level" :class="{ active: $route.path === '/level' }">
-          <span class="icon">{{ level }}</span>
-          <span>Level</span>
-        </nuxt-link>
-        <nuxt-link to="/extra" :class="{ active: $route.path === '/extra' }">
-          <fontawesome icon="folder-plus" />
-          <span>Extra</span>
-        </nuxt-link>
-        <nuxt-link
-          to="/settings"
-          :class="{ active: $route.path === '/settings' }"
+        <component
+          :is="nav.to ? 'router-link' : 'a'"
+          v-for="nav in navItems"
+          :key="nav.name"
+          :to="nav.to"
+          :class="{ active: $route.path === nav.to }"
+          :href="nav.href"
+          :rel="nav.href ? 'noopener noreferrer' : undefined"
+          :target="nav.href ? '_blank' : undefined"
         >
-          <fontawesome icon="cog" />
-          <span>Settings</span>
-        </nuxt-link>
-        <a
-          href="https://github.com/patarapolw/wk-extra"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <fontawesome :icon="['fab', 'github']" />
-          <span>About</span>
-        </a>
+          <fontawesome v-if="nav.icon" :icon="nav.icon" />
+          <span v-if="nav.han" class="icon font-han">{{ nav.han }}</span>
+          <span>{{ nav.name }}</span>
+        </component>
       </div>
 
       <div class="flex-grow" />
@@ -63,70 +38,25 @@
       </div>
     </nav>
 
-    <b-navbar v-if="isReady" class="main-nav has-shadow is-warning">
+    <b-navbar v-if="isAppReady" class="main-nav has-shadow is-warning">
       <template slot="brand">
         <b-navbar-item tag="router-link" to="/">
-          <strong>Zh</strong>
-          <span>Quiz</span>
+          <strong>WK</strong>
+          <span>Extra</span>
         </b-navbar-item>
       </template>
       <template slot="start">
         <b-navbar-item
-          tag="router-link"
-          to="/random"
-          :active="$route.path === '/random'"
+          v-for="nav in navItems"
+          :key="nav.name"
+          :tag="nav.to ? 'router-link' : 'a'"
+          :to="nav.to"
+          :active="$route.path === nav.to"
+          :href="nav.href"
+          :rel="nav.href ? 'noopener noreferrer' : undefined"
+          :target="nav.href ? '_blank' : undefined"
         >
-          Random
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/quiz"
-          :active="$route.path === '/quiz'"
-        >
-          Quiz
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/hanzi"
-          :active="$route.path === '/hanzi'"
-        >
-          Hanzi
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/vocab"
-          :active="$route.path === '/vocab'"
-        >
-          Vocab
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/level"
-          :active="$route.path === '/level'"
-        >
-          Level
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/extra"
-          :active="$route.path === '/extra'"
-        >
-          Extra
-        </b-navbar-item>
-        <b-navbar-item
-          tag="router-link"
-          to="/settings"
-          :active="$route.path === '/settings'"
-        >
-          Settings
-        </b-navbar-item>
-        <b-navbar-item
-          tag="a"
-          href="https://github.com/patarapolw/zhquiz"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          About
+          {{ nav.name }}
         </b-navbar-item>
       </template>
       <template slot="end">
@@ -156,40 +86,70 @@ import { getGravatarUrl } from '~/assets/gravatar'
 
 @Component
 export default class AppLayout extends Vue {
-  level = ''
+  navItems = [
+    {
+      name: 'Random',
+      to: '/random',
+      icon: 'random',
+    },
+    {
+      name: 'Quiz',
+      to: '/quiz',
+      icon: 'question-circle',
+    },
+    {
+      name: 'Edit',
+      to: '/edit',
+      icon: 'folder-plus',
+    },
+    {
+      name: 'Character',
+      to: '/character',
+      han: '字',
+    },
+    {
+      name: 'Settings',
+      to: '/settings',
+      icon: 'cog',
+    },
+    {
+      name: 'About',
+      href: 'https://github.com/patarpaolw/wk-extra',
+      icon: ['fab', 'github'],
+    },
+  ]
 
   getGravatarUrl = getGravatarUrl
 
-  get isReady() {
-    return this.isAuthReady && this.user
+  get isAppReady() {
+    return this.$store.state.isAppReady
   }
 
   get isAuthReady() {
-    return this.$store.state.isAuthReady
+    return this.$store.state.auth.isAuthReady
   }
 
   get user() {
-    return this.$store.state.user
+    return this.$store.state.auth.user
   }
 
   created() {
     this.onAuthChanged()
   }
 
-  doLogout() {
-    this.$fireAuth.signOut()
+  async doLogout() {
+    await this.$fireAuth.signOut()
   }
 
   @Watch('isAuthReady')
   @Watch('user')
   async onAuthChanged() {
-    if (this.isAuthReady && !this.user) {
-      this.$router.push('/')
-    }
-
-    if (this.user) {
-      const { level = 60 } = await this.$axios.$get('/api/user')
-      this.level = level.toString()
+    if (this.isAuthReady) {
+      if (this.user) {
+        this.$store.dispatch('wanikani/doCache')
+      } else {
+        this.$router.push('/')
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import { MutationTree } from 'vuex'
 
 export const state = () => ({
+  kaniwani: true,
   chineseMode: false,
 })
 

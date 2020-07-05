@@ -18,6 +18,7 @@ module.exports = {
     'vue-a11y/label-has-for': 0,
     'import/named': 0,
     'no-unused-vars': 0,
+    '@typescript-eslint/no-unused-vars': 0,
     'vue/no-v-html': 0,
     'require-await': 0,
     'sort-imports': 0,
@@ -28,9 +29,7 @@ module.exports = {
         groups: [
           // Node.js builtins. You could also generate this regex if you use a `.js` config.
           // For example: `^(${require("module").builtinModules.join("|")})(/|$)`
-          [
-            '^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)',
-          ],
+          [`^(${require('module').builtinModules.join('|')})(/|$)`],
           // Packages. `react` and `vue` related packages come first.
           ['^react', '^@?\\w', '^vue-', '^nuxt-'],
           // Internal packages.

@@ -1,4 +1,4 @@
-.font-hanzi {
+.font-han {
   font-family: sans-serif;
 }
 
@@ -28,6 +28,10 @@
 
 .w-full {
   width: 100%;
+}
+
+.hidden {
+  display: none;
 }
 
 x-speak-button {

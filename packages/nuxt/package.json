@@ -15,6 +15,7 @@
     "@types/he": "^1.1.1",
     "@types/markdown-it": "^10.0.1",
     "@types/spark-md5": "^3.0.2",
+    "@types/xregexp": "^4.3.0",
     "axios": "^0.19.2",
     "codemirror": "^5.55.0",
     "dayjs": "^1.8.29",
@@ -27,7 +28,8 @@
     "nuxt-buefy": "^0.3.31",
     "spark-md5": "^3.0.1",
     "vue-codemirror": "^4.0.6",
-    "vue-context": "^5.2.0"
+    "vue-context": "^5.2.0",
+    "xregexp": "^4.3.0"
   },
   "devDependencies": {
     "@nuxt/typescript-build": "^1.0.3",

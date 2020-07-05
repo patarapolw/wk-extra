@@ -32,12 +32,10 @@ export interface IWkError {
 
 export const state = () => ({
   apiKey: '',
-  items: null as
-    | {
-        id: number
-        srsLevel: number
-      }[]
-    | null,
+  items: [] as {
+    id: number
+    srsLevel: number
+  }[],
 })
 
 export type State = ReturnType<typeof state>
@@ -47,7 +45,7 @@ export const mutations: MutationTree<State> = {
     state.items = items
   },
   setApiKey(state, apiKey) {
-    state.apiKey = state.apiKey || apiKey
+    state.apiKey = apiKey || state.apiKey
   },
   unsetApiKey(state) {
     state.apiKey = ''
@@ -66,43 +64,42 @@ export const getters: GetterTree<State, RootState> = {
 }
 
 export const actions: ActionTree<State, RootState> = {
-  async doCache({ state, commit, getters }) {
-    if (!state.items) {
-      const wkApi = getters.api as AxiosInstance
-      let nextUrl = '/assignments'
-      const allData: {
-        id: number
-        srsLevel: number
-      }[] = []
+  async doCache({ commit, getters }) {
+    const wkApi = getters.api as AxiosInstance
+    let nextUrl = '/assignments'
+    const allData: {
+      id: number
+      srsLevel: number
+    }[] = []
 
-      while (true) {
-        const r = await wkApi.get<
-          IWkCollection<
-            IWkResource<{
-              subject_id: number
-              srs_stage: number
-            }>
-          >
-        >(nextUrl, {
-          params: {
-            unlocked: 'true',
-          },
+    while (true) {
+      const r = await wkApi.get<
+        IWkCollection<
+          IWkResource<{
+            subject_id: number
+            srs_stage: number
+          }>
+        >
+      >(nextUrl, {
+        params: {
+          unlocked: 'true',
+        },
+      })
+
+      r.data.data.map((d) => {
+        allData.push({
+          id: d.data.subject_id,
+          srsLevel: d.data.srs_stage,
         })
+      })
 
-        r.data.data.map((d) => {
-          allData.push({
-            id: d.data.subject_id,
-            srsLevel: d.data.srs_stage,
-          })
-        })
-
-        nextUrl = r.data.pages.next_url || ''
-        if (!nextUrl) {
-          break
-        }
+      nextUrl = r.data.pages.next_url || ''
+      if (!nextUrl) {
+        break
       }
-
-      commit('setItems', allData)
     }
+
+    commit('wanikani/setItems', allData)
+    commit('setAppReady', true)
   },
 }
