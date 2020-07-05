@@ -228,7 +228,7 @@ export default class RandomPage extends Vue {
   }
 
   async addToQuiz({ item, type }: ISelected) {
-    await this.$axios.$put('/api/item/quiz', {
+    await this.$axios.$put('/api/quiz', {
       item,
       type,
       settings: this.$store.state.settings,
@@ -237,11 +237,9 @@ export default class RandomPage extends Vue {
   }
 
   async removeFromQuiz({ item, type, quizIds }: ISelected) {
-    await this.$axios.$delete('/api/item/quiz', {
+    await this.$axios.$delete('/api/quiz', {
       data: {
-        item,
-        type,
-        quizIds,
+        ids: quizIds,
       },
     })
     this.$buefy.snackbar.open(`Removed ${type}: ${item} from quiz`)
