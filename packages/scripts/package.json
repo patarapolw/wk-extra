@@ -1,8 +1,9 @@
 {
   "name": "@wk-extra/scripts",
   "private": true,
-  "scripts": {
-    "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('You must use Yarn to install, not NPM')\""
+  "scripts": {},
+  "dependencies": {
+    "axios": "^0.19.2"
   },
   "devDependencies": {
     "@types/node": "^14.0.14",
@@ -25,8 +26,5 @@
     "node": "12.x",
     "npm": "please-use-yarn",
     "yarn": "1.x"
-  },
-  "dependencies": {
-    "axios": "^0.19.2"
   }
 }

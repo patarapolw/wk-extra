@@ -1,0 +1,41 @@
+.font-hanzi {
+  font-family: sans-serif;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  color: blue;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-grow {
+  flex-grow: 1;
+}
+
+.w-full {
+  width: 100%;
+}
+
+x-speak-button {
+  display: inline-block;
+}
+
+@media screen and (max-width: 1024px) {
+  .tablet\:w-full {
+    width: 100%;
+  }
+}
