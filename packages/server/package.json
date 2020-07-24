@@ -23,7 +23,7 @@
     "fastify-oas": "^2.7.0",
     "fastify-session": "^3.3.0",
     "firebase-admin": "^8.11.0",
-    "mongoose": "^5.9.10",
+    "mongoose": "^5.9.21",
     "nanoid": "^3.1.5"
   },
   "devDependencies": {
