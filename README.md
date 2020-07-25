@@ -1,3 +1,3 @@
 # wk-extra
 
-Additional features for <https://wanikani.com>
+Additional features for <https://www.wanikani.com>
