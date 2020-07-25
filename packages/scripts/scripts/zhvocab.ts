@@ -24,17 +24,29 @@ async function main() {
 
   const hskVocab: string[] = []
 
-  const hskHsMap = (yaml.safeLoad(
+  const hskMap = (yaml.safeLoad(
     fs.readFileSync('../../data/zhlevel.yaml', 'utf8')
   ) as {
     level: number
     hanzi: string
     vocab: string[]
-  }[]).reduce((prev, { level, hanzi, vocab }) => {
-    hskVocab.push(...vocab)
-    prev.set(level, hanzi.split(''))
-    return prev
-  }, new Map<number, string[]>())
+  }[]).reduce(
+    (prev, { level, hanzi, vocab }) => {
+      hskVocab.push(...vocab)
+      prev.set(level, {
+        hanzi: hanzi.split(''),
+        vocab,
+      })
+      return prev
+    },
+    new Map<
+      number,
+      {
+        hanzi: string[]
+        vocab: string[]
+      }
+    >()
+  )
 
   await dbInit()
   const reChinese = XRegExp('^\\p{Han}+$')
@@ -58,8 +70,10 @@ async function main() {
     }
   }[] = Array.from({ length: 60 }).map((_, i) => {
     const level = i + 1
+    const hsk = hskMap.get(level)!
+
     accWkHanzi.push(...(ksMap.get(level) || []))
-    accHskHanzi.push(...(hskHsMap.get(level) || []))
+    accHskHanzi.push(...hsk.hanzi)
 
     const wkVocab = new Set(vsMap.get(level) || [])
     const allWkVocab = new Set(
@@ -87,8 +101,8 @@ async function main() {
     const wkBased = new Set(
       dbCedict
         .where(({ entry, alt = [] }) =>
-          Array.from(new Set([entry, ...alt].join('').split(''))).every((a) =>
-            wkHanzi.has(a)
+          [entry, ...alt].some((el) =>
+            el.split('').every((a) => wkHanzi.has(a))
           )
         )
         .map(({ entry }) => entry)
@@ -96,42 +110,77 @@ async function main() {
     const zhBased = new Set(
       dbCedict
         .where(({ entry, alt = [] }) =>
-          Array.from(new Set([entry, ...alt].join('').split(''))).every((a) =>
-            zhHanzi.has(a)
+          [entry, ...alt].some((el) =>
+            el.split('').every((a) => zhHanzi.has(a))
           )
         )
         .map(({ entry }) => entry)
     )
 
+    const hanzi = {
+      wanikani: new Set(ksMap.get(level)),
+      zhlevel: new Set(hsk.hanzi),
+    }
+
+    const getVocab = () => {
+      const vocab = {
+        similar: new Set(
+          hskVocab
+            .filter((v) => !oldSimilarVocab.has(v) && similar.has(v))
+            .map((v) => {
+              oldSimilarVocab.add(v)
+              return v
+            })
+        ),
+        'wanikani-based': new Set(
+          hskVocab
+            .filter((v) => !oldWkVocab.has(v) && wkBased.has(v))
+            .map((v) => {
+              oldWkVocab.add(v)
+              return v
+            })
+        ),
+        'zhlevel-based': new Set(
+          hskVocab
+            .filter((v) => !oldHskVocab.has(v) && zhBased.has(v))
+            .map((v) => {
+              oldHskVocab.add(v)
+              return v
+            })
+        ),
+        additional: new Set(hsk.vocab),
+      }
+
+      const v2 = {
+        similar: Array.from(vocab.similar),
+        'wanikani-based': Array.from(vocab['wanikani-based']).filter(
+          (v) => !vocab.similar.has(v)
+        ),
+        'zhlevel-based': [
+          ...Array.from(vocab['zhlevel-based']).filter(
+            (v) => !vocab.similar.has(v) && !vocab['wanikani-based'].has(v)
+          ),
+          ...Array.from(vocab.additional).filter(
+            (v) =>
+              !oldSimilarVocab.has(v) &&
+              !oldWkVocab.has(v) &&
+              !oldHskVocab.has(v)
+          ),
+        ],
+      }
+
+      return v2
+    }
+
     return {
       level,
       hanzi: {
-        wanikani: (ksMap.get(level) || []).join(''),
-        zhlevel: (hskHsMap.get(level) || []).join(''),
+        wanikani: Array.from(hanzi.wanikani).join(''),
+        zhlevel: Array.from(hanzi.zhlevel)
+          .filter((h) => !hanzi.wanikani.has(h))
+          .join(''),
       },
-      vocab: {
-        similar: hskVocab
-          .filter((v) => !oldSimilarVocab.has(v))
-          .filter((v) => similar.has(v))
-          .map((v) => {
-            oldSimilarVocab.add(v)
-            return v
-          }),
-        'wanikani-based': hskVocab
-          .filter((v) => !oldWkVocab.has(v))
-          .filter((v) => wkBased.has(v))
-          .map((v) => {
-            oldWkVocab.add(v)
-            return v
-          }),
-        'zhlevel-based': hskVocab
-          .filter((v) => !oldHskVocab.has(v))
-          .filter((v) => zhBased.has(v))
-          .map((v) => {
-            oldHskVocab.add(v)
-            return v
-          }),
-      },
+      vocab: getVocab(),
     }
   })
 
