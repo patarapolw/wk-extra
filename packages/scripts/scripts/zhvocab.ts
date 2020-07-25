@@ -40,7 +40,10 @@ async function main() {
   const reChinese = XRegExp('^\\p{Han}+$')
   const accWkHanzi: string[] = []
   const accHskHanzi: string[] = []
-  const oldVocab = new Set<string>()
+
+  const oldSimilarVocab = new Set<string>()
+  const oldWkVocab = new Set<string>()
+  const oldHskVocab = new Set<string>()
 
   const out: {
     level: number
@@ -100,8 +103,6 @@ async function main() {
         .map(({ entry }) => entry)
     )
 
-    const possibleVocabList = hskVocab.filter((v) => !oldVocab.has(v))
-
     return {
       level,
       hanzi: {
@@ -109,22 +110,25 @@ async function main() {
         zhlevel: (hskHsMap.get(level) || []).join(''),
       },
       vocab: {
-        similar: possibleVocabList
+        similar: hskVocab
+          .filter((v) => !oldSimilarVocab.has(v))
           .filter((v) => similar.has(v))
           .map((v) => {
-            oldVocab.add(v)
+            oldSimilarVocab.add(v)
             return v
           }),
-        'wanikani-based': possibleVocabList
+        'wanikani-based': hskVocab
+          .filter((v) => !oldWkVocab.has(v))
           .filter((v) => wkBased.has(v))
           .map((v) => {
-            oldVocab.add(v)
+            oldWkVocab.add(v)
             return v
           }),
-        'zhlevel-based': possibleVocabList
+        'zhlevel-based': hskVocab
+          .filter((v) => !oldHskVocab.has(v))
           .filter((v) => zhBased.has(v))
           .map((v) => {
-            oldVocab.add(v)
+            oldHskVocab.add(v)
             return v
           }),
       },
