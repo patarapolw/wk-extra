@@ -1,6 +1,13 @@
 *.*
+
 !*.ts
+!*.tsx
 !*.js
+!*.jsx
 !*.vue
-node_modules
-dist
+
+dist/
+*-dist/
+dist-*/
+lib/
+node_modules/
