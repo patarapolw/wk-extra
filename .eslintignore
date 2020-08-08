@@ -2,5 +2,6 @@
 !*.ts
 !*.js
 !*.vue
-node_modules
-dist
+node_modules/
+dist/
+lib/

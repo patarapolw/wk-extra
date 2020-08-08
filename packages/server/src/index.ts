@@ -5,20 +5,22 @@ import helmet from 'fastify-helmet'
 import fStatic from 'fastify-static'
 import mongoose from 'mongoose'
 
+import { zhInit } from './db/local'
 import apiRouter from './api'
+import { logger } from './logger'
 
-async function main () {
+async function main() {
   await mongoose.connect(process.env.MONGO_URI!, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
-    useFindAndModify: false
+    useFindAndModify: false,
   })
 
+  await zhInit()
+
   const app = fastify({
-    logger: process.env.NODE_ENV === 'development' ? {
-      prettyPrint: true
-    } : true
+    logger,
   })
   const port = parseInt(process.env.PORT || '8080')
 
@@ -26,30 +28,11 @@ async function main () {
   app.register(apiRouter, { prefix: '/api' })
 
   app.register(fStatic, {
-    root: path.resolve('public')
+    root: path.resolve('public'),
   })
 
   app.setNotFoundHandler((_, reply) => {
     reply.sendFile('index.html')
-  })
-
-  app.addHook('preHandler', async (req, reply) => {
-    const isHttps = ((req.headers['x-forwarded-proto'] || '').substring(0, 5) === 'https')
-    if (isHttps) {
-      return
-    }
-
-    const host = req.headers.host || req.hostname
-
-    if (['localhost', '127.0.0.1'].includes(host.split(':')[0])) {
-      return
-    }
-
-    const { method, url } = req.req
-
-    if (method && ['GET', 'HEAD'].includes(method)) {
-      reply.redirect(301, `https://${host}${url}`)
-    }
   })
 
   app.listen(
@@ -60,7 +43,7 @@ async function main () {
         throw err
       }
 
-      console.log(`Go to http://localhost:${port}`)
+      logger.info(`Go to http://localhost:${port}`)
     }
   )
 }
