@@ -23,6 +23,7 @@
     "@types/xregexp": "^4.3.0",
     "any-serialize": "^1.4.12",
     "axios": "^0.19.2",
+    "axios-rate-limit": "^1.2.1",
     "dayjs": "^1.8.32",
     "fastify": "^3.2.0",
     "fastify-helmet": "^5.0.0",

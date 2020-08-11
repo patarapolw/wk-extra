@@ -4,6 +4,7 @@ dependencies:
   '@types/xregexp': 4.3.0
   any-serialize: 1.4.12
   axios: 0.19.2
+  axios-rate-limit: 1.2.1_axios@0.19.2
   dayjs: 1.8.32
   fastify: 3.2.0
   fastify-helmet: 4.0.2
@@ -701,6 +702,14 @@ packages:
     dev: false
     resolution:
       integrity: sha512-KtC63UyZARidAoIV8wXutAZnDIbZcXBqLjTAhZOX+mdMZBQCh5il/15MvCvma1178nhTwvN2D0TOAdiKG1MpUA==
+  /axios-rate-limit/1.2.1_axios@0.19.2:
+    dependencies:
+      axios: 0.19.2
+    dev: false
+    peerDependencies:
+      axios: '*'
+    resolution:
+      integrity: sha512-SBhBSDkqhimykrQf39KQ6aoXJC4kEvVhz9N2FIk0rdzZpP9PubvR9AyXzvUnTPAMj863LJKKywHrPfDpeZ0WLQ==
   /axios/0.19.2:
     dependencies:
       follow-redirects: 1.5.10
@@ -4596,6 +4605,7 @@ specifiers:
   '@typescript-eslint/parser': ^3.8.0
   any-serialize: ^1.4.12
   axios: ^0.19.2
+  axios-rate-limit: ^1.2.1
   babel-plugin-module-resolver: ^4.0.0
   better-sqlite3: ^7.1.0
   dayjs: ^1.8.32
