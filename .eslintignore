@@ -1,6 +1,8 @@
 *.*
 !*.ts
+!*.tsx
 !*.js
+!*.jsx
 !*.vue
 node_modules/
 dist/

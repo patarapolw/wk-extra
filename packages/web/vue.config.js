@@ -1,6 +1,8 @@
 module.exports = {
-  devServer: {
-    proxy: 'http://localhost:8080',
-    port: 8081
-  }
+  configureWebpack (config) {
+    config.resolve.extensions.unshift('.vue')
+  },
+  transpileDependencies: [
+    'vuetify'
+  ]
 }
