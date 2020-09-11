@@ -1,31 +1,29 @@
 <template>
   <v-app>
-     <v-container v-if="loading" fill-height>
-        <v-layout column justify-center align-center>
-          <v-progress-circular indeterminate :size="70" />
-        </v-layout>
-      </v-container>
+    <v-container
+      v-if="loading"
+      fill-height
+    >
+      <v-layout
+        column
+        justify-center
+        align-center
+      >
+        <v-progress-circular
+          indeterminate
+          :size="70"
+        />
+      </v-layout>
+    </v-container>
 
-    <v-dialog v-else-if="!$store.state.apiKey" :value="true" max-width="500" persistent>
+    <v-dialog
+      v-else-if="!$store.state.apiKey"
+      :value="true"
+      max-width="500"
+      persistent
+    >
       <v-card class="pa-4">
-        <form @submit.prevent="doLogin">
-          <v-card-text>
-            <div class="text-subtitle-2 mb-4">
-              Please login with <a
-                href="https://www.wanikani.com/settings/personal_access_tokens"
-                target="_blank" rel="noopener noreferrer"
-              >WaniKani API token</a> or (previous users only) your email address.
-            </div>
-
-            <v-text-field
-              v-model="loginKey"
-              label="WaniKani API token or email address"
-            />
-          </v-card-text>
-          <v-card-actions>
-            <v-btn block color="primary" :disabled="!loginKey" @click="doLogin">Login</v-btn>
-          </v-card-actions>
-        </form>
+        <div id="cotter-form-container" style="height: 300px;"></div>
       </v-card>
     </v-dialog>
 

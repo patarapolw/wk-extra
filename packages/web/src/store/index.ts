@@ -1,25 +1,20 @@
 import {
-  mutationTree,
   useAccessor
 } from 'typed-vuex'
 import Vue from 'vue'
-import Vuex from 'vuex'
+import Vuex, { StoreOptions } from 'vuex'
+
+import user from './user'
 
 Vue.use(Vuex)
 
-const state = () => ({
-  apiKey: ''
-})
+const state = () => ({})
 
-const mutations = mutationTree(state, {
-  SET_API_KEY (state, apiKey) {
-    state.apiKey = apiKey
-  }
-})
-
-const storePattern = {
+const storePattern: StoreOptions<ReturnType<typeof state>> = {
   state,
-  mutations
+  modules: {
+    user
+  }
 }
 
 const store = new Vuex.Store(storePattern)
@@ -27,6 +22,6 @@ const store = new Vuex.Store(storePattern)
 export const accessor = useAccessor(store, storePattern)
 
 // Optionally, inject accessor globally
-Vue.prototype.$accessor = accessor
+// Vue.prototype.$accessor = accessor
 
 export default store

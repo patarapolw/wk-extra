@@ -1,54 +1,87 @@
+import { api } from '@/assets/user'
+import { wk } from '@/assets/wanikani'
+import { accessor } from '@/store'
+import Cotter from 'cotter'
 import { Component, Vue } from 'vue-property-decorator'
 
 @Component<App>({
   created () {
-    setTimeout(() => {
+    if (api.getToken()) {
       this.loading = false
-    }, 2000)
+    }
+  },
+  mounted () {
+    console.log(accessor.user)
+
+    if (this.loading) {
+      this.loading = false
+      const cotter = new Cotter({
+        ApiKeyID: process.env.VUE_APP_COTTER_API_KEY,
+        Type: 'email',
+        ContainerID: 'cotter-form-container',
+        AdditionalFields: [
+          {
+            label: 'WaniKani API token',
+            name: 'apiKey',
+            placeholder: 'Active WaniKani subscription is required. Leave blank if you are a previous user.'
+          }
+        ],
+        OnBegin: async (payload) => {
+          const { client_json: { apiKey } } = payload as unknown as {
+            client_json: {
+              apiKey: string;
+            };
+          }
+
+          if (!wk.validateApiKey(apiKey)) {
+            return 'Invalid API key'
+          }
+
+          try {
+            await wk.getUser(apiKey)
+            return null
+          } catch (e) {
+            const { error, code } = e.response.data
+            return `${error} (${code})`
+          }
+        },
+        OnSuccess: async (result) => {
+          const r = result as unknown as {
+            apiKey: string;
+            email: string;
+          }
+
+          wk.setApiKey(r.apiKey)
+          const user = await wk.getUser(r.apiKey)
+
+          accessor.user.SET_USER({
+            apiKey: r.apiKey,
+            level: user.data.level
+          })
+        }
+      })
+
+      const user = cotter.getLoggedInUser()
+
+      if (!user) {
+        this.$nextTick(async () => {
+          if (!user) {
+            await cotter
+              .signInWithLink()
+              .showEmailForm()
+          }
+        })
+      } else {
+        cotter.logOut().then(() => {
+          return cotter
+            .signInWithLink()
+            .showEmailForm()
+        })
+      }
+    }
   }
 })
 export default class App extends Vue {
   loading = true
   loginKey = ''
-
-  readonly rules: Record<string, (s: string) => string> = {
-    apiKey: (s) => {
-      const hex = '[0-9a-f]'
-      return new RegExp(`^${hex}{8}-${hex}{4}-${hex}{4}-${hex}{4}-${hex}{12}$`).test(s)
-        ? ''
-        : 'Invalid API key'
-    },
-    email: (s) => {
-      /**
-       * @see https://stackoverflow.com/questions/46155/how-to-validate-an-email-address-in-javascript
-       */
-      const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-      return re.test(String(s).toLowerCase())
-        ? ''
-        : 'Invalid email address'
-    }
-  }
-
-  doLogin () {
-    if (this.loginKey) {
-      const e = this.getLoginKeyError()
-      if (e) {
-        alert(e)
-      } else {
-        this.$accessor.SET_API_KEY(this.loginKey)
-      }
-    }
-  }
-
-  getLoginKeyError () {
-    const s = this.loginKey
-
-    const emailError = this.rules.email(s)
-    if (!emailError) return ''
-
-    const apiError = this.rules.apiKey(s)
-    if (!apiError) return ''
-
-    return apiError || emailError
-  }
 }

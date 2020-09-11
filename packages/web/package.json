@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn')\"",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "dev": "vue-cli-service serve"
   },
   "dependencies": {
+    "axios": "^0.20.0",
     "core-js": "^3.6.5",
+    "cotter": "^0.3.16",
     "register-service-worker": "^1.7.1",
     "typed-vuex": "^0.1.21",
     "vue": "^2.6.11",
@@ -39,7 +40,7 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-vue": "^6.2.2",
-    "import-sort-parser-babel-vue": "^1.0.6",
+    "import-sort-parser-typescript": "^6.0.0",
     "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
     "typescript": "~3.9.3",
@@ -49,12 +50,14 @@
   },
   "engines": {
     "node": "12.x",
-    "yarn": "1.x"
+    "npm": "please-use-pnpm",
+    "yarn": "please-use-pnpm",
+    "pnpm": "5.x"
   },
   "engineStrict": true,
   "importSort": {
-    ".js, .jsx, .ts, .tsx, .vue": {
-      "parser": "babel-vue",
+    ".js, .jsx, .ts, .tsx": {
+      "parser": "typescript",
       "style": "module"
     }
   }

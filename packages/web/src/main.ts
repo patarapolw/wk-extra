@@ -1,3 +1,5 @@
+/// <reference types="vuetify/types" />
+
 import './registerServiceWorker'
 
 import Vue from 'vue'
