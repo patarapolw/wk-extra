@@ -1,8 +1,10 @@
 import { api } from '@/assets/user'
 import { wk } from '@/assets/wanikani'
-import { accessor } from '@/store'
+import * as userStore from '@/store/user'
 import Cotter from 'cotter'
 import { Component, Vue } from 'vue-property-decorator'
+
+type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
 @Component<App>({
   created () {
@@ -10,11 +12,11 @@ import { Component, Vue } from 'vue-property-decorator'
       this.loading = false
     }
   },
-  mounted () {
-    console.log(accessor.user)
-
+  async mounted () {
     if (this.loading) {
       this.loading = false
+      let user: ThenArg<ReturnType<typeof wk.getUser>> | null = null
+
       const cotter = new Cotter({
         ApiKeyID: process.env.VUE_APP_COTTER_API_KEY,
         Type: 'email',
@@ -23,7 +25,7 @@ import { Component, Vue } from 'vue-property-decorator'
           {
             label: 'WaniKani API token',
             name: 'apiKey',
-            placeholder: 'Active WaniKani subscription is required. Leave blank if you are a previous user.'
+            placeholder: 'Leave blank if you are a previous user'
           }
         ],
         OnBegin: async (payload) => {
@@ -38,7 +40,7 @@ import { Component, Vue } from 'vue-property-decorator'
           }
 
           try {
-            await wk.getUser(apiKey)
+            user = await wk.getUser(apiKey)
             return null
           } catch (e) {
             const { error, code } = e.response.data
@@ -46,36 +48,52 @@ import { Component, Vue } from 'vue-property-decorator'
           }
         },
         OnSuccess: async (result) => {
-          const r = result as unknown as {
+          const { apiKey } = result as unknown as {
             apiKey: string;
-            email: string;
           }
 
-          wk.setApiKey(r.apiKey)
-          const user = await wk.getUser(r.apiKey)
+          api.setToken(result.oauth_token.access_token)
+          await api.axios.put('/user', { apiKey })
 
-          accessor.user.SET_USER({
-            apiKey: r.apiKey,
+          wk.setApiKey(apiKey)
+          user = user || (await wk.getUser(apiKey))
+
+          userStore.mutations.SET_USER({
+            username: user.data.username,
+            maxLevelShown: user.data.subscription.max_level_granted,
             level: user.data.level
           })
         }
       })
 
-      const user = cotter.getLoggedInUser()
+      const token = cotter.tokenHandler.accessToken
+
+      if (token) {
+        api.setToken(token)
+
+        try {
+          const { data: { apiKey } } = await api.axios.get<{
+            apiKey: string;
+          }>('/user')
+
+          wk.setApiKey(apiKey)
+          user = user || (await wk.getUser(apiKey))
+
+          userStore.mutations.SET_USER({
+            username: user.data.username,
+            maxLevelShown: user.data.subscription.max_level_granted,
+            level: user.data.level
+          })
+        } catch (_) {}
+      }
 
       if (!user) {
-        this.$nextTick(async () => {
-          if (!user) {
-            await cotter
+        this.$nextTick(() => {
+          cotter.logOut().then(() => {
+            return cotter
               .signInWithLink()
               .showEmailForm()
-          }
-        })
-      } else {
-        cotter.logOut().then(() => {
-          return cotter
-            .signInWithLink()
-            .showEmailForm()
+          })
         })
       }
     }

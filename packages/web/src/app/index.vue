@@ -71,4 +71,13 @@
     </fragment>
   </v-app>
 </template>
+
 <script lang="ts" src="./index.ts" />
+
+<style scoped>
+@media screen and (max-width: 550px) {
+  #cotter-form-container {
+    width: calc(100vw - 50px);
+  }
+}
+</style>

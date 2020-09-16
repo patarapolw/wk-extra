@@ -1,27 +1,10 @@
-import {
-  useAccessor
-} from 'typed-vuex'
-import Vue from 'vue'
-import Vuex, { StoreOptions } from 'vuex'
+import './user'
 
-import user from './user'
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+import { storeBuilder } from './RootState'
 
 Vue.use(Vuex)
 
-const state = () => ({})
-
-const storePattern: StoreOptions<ReturnType<typeof state>> = {
-  state,
-  modules: {
-    user
-  }
-}
-
-const store = new Vuex.Store(storePattern)
-
-export const accessor = useAccessor(store, storePattern)
-
-// Optionally, inject accessor globally
-// Vue.prototype.$accessor = accessor
-
-export default store
+export default storeBuilder.vuexStore()

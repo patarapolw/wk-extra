@@ -3,7 +3,6 @@ dependencies:
   core-js: 3.6.5
   cotter: 0.3.16
   register-service-worker: 1.7.1
-  typed-vuex: 0.1.21_vuex@3.5.1
   vue: 2.6.12
   vue-class-component: 7.2.5_vue@2.6.12
   vue-fragment: 1.5.1_vue@2.6.12
@@ -11,6 +10,7 @@ dependencies:
   vue-router: 3.4.3
   vuetify: 2.3.10_vue@2.6.12
   vuex: 3.5.1_vue@2.6.12
+  vuex-typex: 3.1.6_vuex@3.5.1
 devDependencies:
   '@typescript-eslint/eslint-plugin': 2.34.0_5004700905763c91177aaa7d1d0d56ac
   '@typescript-eslint/parser': 2.34.0_eslint@6.8.0+typescript@3.9.7
@@ -9783,14 +9783,6 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==
-  /typed-vuex/0.1.21_vuex@3.5.1:
-    dependencies:
-      vuex: 3.5.1_vue@2.6.12
-    dev: false
-    peerDependencies:
-      vuex: ^3.5.1
-    resolution:
-      integrity: sha512-8XWjS4E/DFXiFfBLQBsdNzXbLdA1rl1lZVsOgnZ7f6UMk/DE9GhyIc7RZPjQnt47d/RVR0QhtGMehfGt3tKbTg==
   /typedarray/0.0.6:
     dev: true
     resolution:
@@ -10193,6 +10185,14 @@ packages:
       vue: ^2.6.4
     resolution:
       integrity: sha512-KzL/MhZ7ajubm9kwbdCoA/cRV50RX+a5Hcqiwt7Am1Fni2crDtl2no05UNwKroTfscrYYf07gq3WIFSurPsnCA==
+  /vuex-typex/3.1.6_vuex@3.5.1:
+    dependencies:
+      vuex: 3.5.1_vue@2.6.12
+    dev: false
+    peerDependencies:
+      vuex: ^3.0.1
+    resolution:
+      integrity: sha512-P/FLfHCItPWtRwxCrKez22j4ogPwNxZPDpkOne4pPv4UhtApvafYPoO8pASCoNx8QVM8E4ML1OBZL8uHPjqArg==
   /vuex/3.5.1_vue@2.6.12:
     dependencies:
       vue: 2.6.12
@@ -10729,7 +10729,6 @@ specifiers:
   register-service-worker: ^1.7.1
   sass: ^1.26.5
   sass-loader: ^8.0.2
-  typed-vuex: ^0.1.21
   typescript: ~3.9.3
   vue: ^2.6.11
   vue-class-component: ^7.2.3
@@ -10741,3 +10740,4 @@ specifiers:
   vuetify: ^2.2.11
   vuetify-loader: ^1.3.0
   vuex: ^3.4.0
+  vuex-typex: ^3.1.6

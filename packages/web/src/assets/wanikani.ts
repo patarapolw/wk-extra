@@ -28,7 +28,8 @@ export const wk = {
       username: string;
       level: number;
       subscription: {
-        active: boolean;
+        // active: boolean;
+        max_level_granted: number;
       };
     }>, 'id'>>('/user', {
       headers: {

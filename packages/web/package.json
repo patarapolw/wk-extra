@@ -12,14 +12,14 @@
     "core-js": "^3.6.5",
     "cotter": "^0.3.16",
     "register-service-worker": "^1.7.1",
-    "typed-vuex": "^0.1.21",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-fragment": "^1.5.1",
     "vue-property-decorator": "^8.4.2",
     "vue-router": "^3.2.0",
     "vuetify": "^2.2.11",
-    "vuex": "^3.4.0"
+    "vuex": "^3.4.0",
+    "vuex-typex": "^3.1.6"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^2.33.0",
