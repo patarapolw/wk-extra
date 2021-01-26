@@ -26,7 +26,6 @@ export const wkApi = rateLimit(
 
 export interface IResource<T = any> {
   id: number
-  integer: string
   url: string
   data_updated_at: string // Date
   data: T
