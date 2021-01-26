@@ -1,11 +1,10 @@
+import 'log-buffer'
+
 import fs from 'fs'
 
+import { db, dbEdict, dbInit } from '@/dict'
 // @ts-ignore
 import { Iconv } from 'iconv'
-
-import { db, dbEdict, dbInit } from '@/dict'
-
-import 'log-buffer'
 
 /**
  * KANJI-1;KANJI-2 [KANA-1;KANA-2] /(general information) (see xxxx) gloss/gloss/.../
@@ -62,7 +61,7 @@ async function readEdict() {
     })
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     let s = ''
     fs.createReadStream('/Users/patarapolw/Dropbox/database/raw/edict2')
       .pipe(new Iconv('EUC-JP', 'UTF-8'))

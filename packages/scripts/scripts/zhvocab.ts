@@ -1,12 +1,11 @@
 import fs from 'fs'
 
+import { dbCedict, dbEdict, dbInit } from '@/dict'
 import yaml from 'js-yaml'
 import XRegExp from 'xregexp'
 
-import { dbCedict, dbEdict, dbInit } from '@/dict'
-
 async function main() {
-  const ksMap = (yaml.safeLoad(fs.readFileSync('cache/kanji.yaml', 'utf8')) as {
+  const ksMap = (yaml.load(fs.readFileSync('cache/kanji.yaml', 'utf8')) as {
     level: number
     kanji: string
   }[]).reduce((prev, { level, kanji }) => {
@@ -14,7 +13,7 @@ async function main() {
     return prev
   }, new Map<number, string[]>())
 
-  const vsMap = (yaml.safeLoad(fs.readFileSync('cache/vocab.yaml', 'utf8')) as {
+  const vsMap = (yaml.load(fs.readFileSync('cache/vocab.yaml', 'utf8')) as {
     level: number
     vocab: string[]
   }[]).reduce((prev, { level, vocab }) => {
@@ -24,7 +23,7 @@ async function main() {
 
   const hskVocab: string[] = []
 
-  const hskMap = (yaml.safeLoad(
+  const hskMap = (yaml.load(
     fs.readFileSync('../../data/zhlevel.yaml', 'utf8')
   ) as {
     level: number
@@ -186,7 +185,7 @@ async function main() {
 
   fs.writeFileSync(
     'cache/zhvocab.yaml',
-    yaml.safeDump(out, {
+    yaml.dump(out, {
       flowLevel: 3,
     })
   )

@@ -22,7 +22,7 @@ export const sEdict = S.shape({
 export let dbEdict: Collection<typeof sEdict.type>
 
 export async function dbInit(filename = 'cache/db.loki') {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     db = new Loki(filename, {
       autoload: true,
       autoloadCallback: async () => {

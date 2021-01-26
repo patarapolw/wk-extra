@@ -1,8 +1,7 @@
 import fs from 'fs'
 
-import yaml from 'js-yaml'
-
 import { getVocab } from '@/wk/get'
+import yaml from 'js-yaml'
 
 async function main() {
   const ssMap = new Map<
@@ -51,7 +50,7 @@ async function main() {
 
   fs.writeFileSync(
     'cache/vocab.yaml',
-    yaml.safeDump(vs, {
+    yaml.dump(vs, {
       flowLevel: 2,
     })
   )
@@ -78,7 +77,7 @@ async function main() {
     .sort(([lv1], [lv2]) => lv1 - lv2)
     .map(([level, sentences]) => ({ level, sentences }))
 
-  fs.writeFileSync('cache/sentences.yaml', yaml.safeDump(ss))
+  fs.writeFileSync('cache/sentences.yaml', yaml.dump(ss))
 }
 
 if (require.main === module) {

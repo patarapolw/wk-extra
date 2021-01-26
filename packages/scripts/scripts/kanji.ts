@@ -1,8 +1,7 @@
 import fs from 'fs'
 
-import yaml from 'js-yaml'
-
 import { getKanji } from '@/wk/get'
+import yaml from 'js-yaml'
 
 async function main() {
   const ks = Array.from(
@@ -17,7 +16,7 @@ async function main() {
     .sort(([lv1], [lv2]) => lv1 - lv2)
     .map(([level, ss]) => ({ level, kanji: Array.from(ss).join('') }))
 
-  fs.writeFileSync('cache/kanji.yaml', yaml.safeDump(ks))
+  fs.writeFileSync('cache/kanji.yaml', yaml.dump(ks))
 }
 
 if (require.main === module) {

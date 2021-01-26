@@ -1,0 +1,2 @@
+*.db filter=git-crypt diff=git-crypt
+*.loki filter=git-crypt diff=git-crypt
