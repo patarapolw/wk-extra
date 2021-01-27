@@ -5,43 +5,63 @@ import S from 'jsonschema-definer'
 async function main() {
   const db = sqlite3('../../data/wanikani.db')
 
-  const sKanji = S.shape({
+  const sVocabulary = S.shape({
     level: S.integer(),
     characters: S.string(),
-    meanings: S.list(
+    pronunciation_audios: S.list(
       S.shape({
-        meaning: S.string(),
-        primary: S.boolean(),
-      }).additionalProperties(true)
+        url: S.string(),
+        metadata: S.shape({
+          gender: S.string().enum('male', 'female'),
+          voice_actor_id: S.integer(),
+          voice_actor_name: S.string(),
+          voice_description: S.string(),
+        }).additionalProperties(true),
+        content_type: S.string().enum('audio/mpeg', 'audio/ogg'),
+      })
     ),
     readings: S.list(
       S.shape({
-        type: S.string().enum('onyomi', 'kunyomi', 'nanori'),
         primary: S.boolean(),
         reading: S.string(),
       }).additionalProperties(true)
     ),
+    meanings: S.list(
+      S.shape({
+        primary: S.boolean(),
+        meaning: S.string(),
+      }).additionalProperties(true)
+    ),
+    auxiliary_meanings: S.list(
+      S.shape({
+        type: S.string(),
+        meaning: S.string(),
+      })
+    ),
+    context_sentences: S.list(
+      S.shape({
+        en: S.string(),
+        ja: S.string(),
+      })
+    ),
     component_subject_ids: S.list(S.integer()),
-    amalgamation_subject_ids: S.list(S.integer()),
-    visually_similar_subject_ids: S.list(S.integer()),
     meaning_mnemonic: S.string(),
-    meaning_hint: S.anyOf(S.string(), S.null()),
     reading_mnemonic: S.string(),
-    reading_hint: S.anyOf(S.string(), S.null()),
   }).additionalProperties(true)
 
   const stmt = db.prepare(/* sql */ `
-  INSERT INTO "kanji" ("id", "data_updated_at", "url", "data")
+  INSERT INTO "vocabulary" ("id", "data_updated_at", "url", "data")
   VALUES (@id, @data_updated_at, @url, @data)
   `)
 
-  let nextUrl = '/subjects?types=kanji'
+  let nextUrl = '/subjects?types=vocabulary'
 
   while (true) {
     const r = await wkApi.get<
       ICollection<
-        IResource<typeof sKanji.type> & {
+        IResource<typeof sVocabulary.type> & {
           id: number
+          object: 'vocabulary'
           data_updated_at: string
           url: string
         }
@@ -50,9 +70,13 @@ async function main() {
 
     db.transaction(() => {
       for (const d of r.data.data) {
+        if (d.object !== 'vocabulary') {
+          throw new Error('not Vocabulary')
+        }
+
         stmt.run({
           ...d,
-          data: JSON.stringify(sKanji.ensure(d.data)),
+          data: JSON.stringify(sVocabulary.ensure(d.data)),
         })
       }
     })()

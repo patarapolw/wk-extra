@@ -1,5 +1,5 @@
 {
-  "name": "@wk-extra/scripts",
+  "name": "@wk-extra/api-v2",
   "private": true,
   "scripts": {
     "ts": "ts-node -r tsconfig-paths/register"
