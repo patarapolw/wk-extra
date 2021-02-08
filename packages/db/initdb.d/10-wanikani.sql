@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "wkSubjects" (
+CREATE TABLE "wkSubjects" (
   "id"              INT NOT NULL,
   "object"          TEXT NOT NULL,
   "data_updated_at" TEXT NOT NULL,
