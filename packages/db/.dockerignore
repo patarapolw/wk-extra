@@ -1,0 +1,7 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!/backup.sh
+!/del.py
+!/entrypoint.sh
