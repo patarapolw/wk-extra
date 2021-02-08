@@ -5,6 +5,7 @@
     "ts": "ts-node -r tsconfig-paths/register"
   },
   "dependencies": {
+    "@databases/pg": "^4.0.0",
     "@types/better-sqlite3": "^5.4.1",
     "@types/js-yaml": "^4.0.0",
     "@types/lokijs": "^1.5.3",
