@@ -2,9 +2,10 @@ import 'log-buffer'
 
 import fs from 'fs'
 
-import createConnectionPool, { sql } from '@databases/sqlite'
+import createConnectionPool, { sql } from '@databases/pg'
 // @ts-ignore
 import { Iconv } from 'iconv'
+import S from 'jsonschema-definer'
 
 /**
  * KANJI-1;KANJI-2 [KANA-1;KANA-2] /(general information) (see xxxx) gloss/gloss/.../
@@ -20,11 +21,7 @@ async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
   const dbEdict = {
     lots: [] as ReturnType<typeof sql>[],
     insertOne(p: { entry: string[]; reading: string[]; english: string[] }) {
-      this.lots.push(
-        sql`(${JSON.stringify(p.entry)}, ${JSON.stringify(
-          p.reading
-        )}, ${JSON.stringify(p.english)})`
-      )
+      this.lots.push(sql`(${p})`)
     },
   }
 
@@ -93,27 +90,30 @@ async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
 }
 
 async function main() {
-  const db = createConnectionPool('cache/edict.db')
+  const db = createConnectionPool(process.env.DATABASE_URL)
 
   await db.query(sql`
-  CREATE TABLE "edict" (
-    "id"        INTEGER PRIMARY KEY,  -- autoincrement
-    "entry"     JSON NOT NULL,
-    "reading"   JSON NOT NULL,
-    "english"   JSON NOT NULL
-  )
+  ALTER TABLE "edict" ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
+    JSON.stringify(
+      S.shape({
+        entry: S.list(S.string()).minItems(1),
+        reading: S.list(S.string()),
+        english: S.list(S.string()).minItems(1),
+      }).valueOf()
+    )
+  )}', "data"))
   `)
 
   await db.tx(async (db) => {
-    const batchSize = 300
+    const batchSize = 5000
 
     const lots = await readEdict('cache/edict2')
-    lots.shift()
+    console.dir(lots.shift(), { depth: null })
 
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('edict2', lots[i])
       await db.query(sql`
-        INSERT INTO "edict" ("entry", "reading", "english")
+        INSERT INTO "edict" ("data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }

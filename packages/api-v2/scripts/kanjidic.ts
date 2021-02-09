@@ -2,26 +2,26 @@ import 'log-buffer'
 
 import fs from 'fs'
 
-import createConnectionPool, { sql } from '@databases/sqlite'
+import createConnectionPool, { sql } from '@databases/pg'
 // @ts-ignore
 import { Iconv } from 'iconv'
+import S from 'jsonschema-definer'
 import XRegExp from 'xregexp'
 
 async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
   const dbEdict = {
     lots: [] as ReturnType<typeof sql>[],
-    insertOne(p: {
+    insertOne({
+      kanji,
+      ...p
+    }: {
       kanji: string
       onyomi: string[]
       kunyomi: string[]
       nanori: string[]
       english: string[]
     }) {
-      this.lots.push(
-        sql`(${p.kanji}, ${JSON.stringify(p.onyomi)}, ${JSON.stringify(
-          p.kunyomi
-        )}, ${JSON.stringify(p.nanori)}, ${JSON.stringify(p.english)})`
-      )
+      this.lots.push(sql`(${kanji}, ${p})`)
     },
   }
 
@@ -98,27 +98,30 @@ async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
 }
 
 async function main() {
-  const db = createConnectionPool('cache/kanjidic.db')
+  const db = createConnectionPool(process.env.DATABASE_URL)
 
   await db.query(sql`
-  CREATE TABLE IF NOT EXISTS "kanji" (
-    "kanji"     TEXT NOT NULL PRIMARY KEY,
-    "onyomi"    JSON NOT NULL,
-    "kunyomi"   JSON NOT NULL,
-    "nanori"    JSON NOT NULL,
-    "english"   JSON NOT NULL
-  )
+  ALTER TABLE "kanji" ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
+    JSON.stringify(
+      S.shape({
+        kunyomi: S.list(S.string()),
+        onyomi: S.list(S.string()),
+        nanori: S.list(S.string()),
+        english: S.list(S.string()),
+      }).valueOf()
+    )
+  )}', "data"))
   `)
 
   await db.tx(async (db) => {
-    const batchSize = 150
+    const batchSize = 1000
 
     let lots = await readEdict('cache/kanjidic')
 
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('kanjidic', lots[i])
       await db.query(sql`
-        INSERT INTO "kanji" ("kanji", "onyomi", "kunyomi", "nanori", "english")
+        INSERT INTO "kanji" ("kanji", "data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }
@@ -128,7 +131,7 @@ async function main() {
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('kanjd212', lots[i])
       await db.query(sql`
-        INSERT INTO "kanji" ("kanji", "onyomi", "kunyomi", "nanori", "english")
+        INSERT INTO "kanji" ("kanji", "data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }
