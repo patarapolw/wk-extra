@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <pre></pre>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/1.0.30/encoding.min.js"
+      integrity="sha512-rqL5c2sp6KdRdB27P16dSYF9J3/WrP+UHrKuzWiN6304wz0bzv1ZE8G+zieQGSnNfg9UasgKNOQzv4yir7+Prg=="
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      ;(async function () {
+        var req = new XMLHttpRequest()
+        req.open('GET', './cache/kanjd212', true)
+        req.responseType = 'arraybuffer'
+
+        req.onload = function (event) {
+          var buffer = req.response
+          if (buffer) {
+            // Shift_JIS Array
+            var sjisArray = new Uint8Array(buffer)
+
+            // Convert encoding to UNICODE (JavaScript Unicode Array).
+            var unicodeArray = Encoding.convert(sjisArray, {
+              to: 'UNICODE',
+              from: 'EUCJP',
+            })
+
+            // Join to string.
+            document.getElementsByTagName(
+              'pre'
+            )[0].innerText = Encoding.codeToString(unicodeArray)
+          }
+        }
+
+        req.send(null)
+      })()
+    </script>
+  </body>
+</html>

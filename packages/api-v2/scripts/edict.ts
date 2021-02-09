@@ -92,18 +92,18 @@ async function main() {
   await db.tx(async (db) => {
     const batchSize = 5000
 
-    let lots = await readEdict('cache/edict')
-    lots.shift()
+    // let lots = await readEdict('cache/edict')
+    // lots.shift()
 
-    for (let i = 0; i < lots.length; i += batchSize) {
-      console.log('edict', lots[i])
-      await db.query(sql`
-        INSERT INTO "edict" ("entry", "reading", "english")
-        VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
-      `)
-    }
+    // for (let i = 0; i < lots.length; i += batchSize) {
+    //   console.log('edict', lots[i])
+    //   await db.query(sql`
+    //     INSERT INTO "edict" ("entry", "reading", "english")
+    //     VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+    //   `)
+    // }
 
-    lots = await readEdict('cache/edict2')
+    const lots = await readEdict('cache/edict2')
     lots.shift()
 
     for (let i = 0; i < lots.length; i += batchSize) {
