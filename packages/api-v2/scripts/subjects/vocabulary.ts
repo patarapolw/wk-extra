@@ -83,7 +83,7 @@ async function main() {
       const batchSize = 100
       for (let i = 0; i < lots.length; i += batchSize) {
         await db.query(sql`
-          INSERT INTO "wk_subjects" ("id", "data_updated_at", "object", "url", "data")
+          INSERT INTO wanikani.subjects ("id", "data_updated_at", "object", "url", "data")
           VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
         `)
       }

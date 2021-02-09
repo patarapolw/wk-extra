@@ -101,7 +101,7 @@ async function main() {
   const db = createConnectionPool(process.env.DATABASE_URL)
 
   await db.query(sql`
-  ALTER TABLE "d_kanji" ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
+  ALTER TABLE dict.kanji ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
     JSON.stringify(
       S.shape({
         kunyomi: S.list(S.string()),
@@ -121,7 +121,7 @@ async function main() {
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('kanjidic', lots[i])
       await db.query(sql`
-        INSERT INTO "d_kanji" ("kanji", "data")
+        INSERT INTO dict.kanji ("kanji", "data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }
@@ -131,7 +131,7 @@ async function main() {
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('kanjd212', lots[i])
       await db.query(sql`
-        INSERT INTO "d_kanji" ("kanji", "data")
+        INSERT INTO dict.kanji ("kanji", "data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }
