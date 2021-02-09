@@ -1,6 +1,8 @@
+import 'log-buffer'
+
 import fs from 'fs'
 
-import createConnectionPool, { sql } from '@databases/pg'
+import createConnectionPool, { sql } from '@databases/sqlite'
 // @ts-ignore
 import { Iconv } from 'iconv'
 
@@ -18,7 +20,11 @@ async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
   const dbEdict = {
     lots: [] as ReturnType<typeof sql>[],
     insertOne(p: { entry: string[]; reading: string[]; english: string[] }) {
-      this.lots.push(sql`(${p.entry}, ${p.reading}, ${p.english})`)
+      this.lots.push(
+        sql`(${JSON.stringify(p.entry)}, ${JSON.stringify(
+          p.reading
+        )}, ${JSON.stringify(p.english)})`
+      )
     },
   }
 
@@ -87,21 +93,19 @@ async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
 }
 
 async function main() {
-  const db = createConnectionPool(process.env.DATABASE_URL)
+  const db = createConnectionPool('cache/edict.db')
+
+  await db.query(sql`
+  CREATE TABLE "edict" (
+    "id"        INTEGER PRIMARY KEY,  -- autoincrement
+    "entry"     JSON NOT NULL,
+    "reading"   JSON NOT NULL,
+    "english"   JSON NOT NULL
+  )
+  `)
 
   await db.tx(async (db) => {
-    const batchSize = 5000
-
-    // let lots = await readEdict('cache/edict')
-    // lots.shift()
-
-    // for (let i = 0; i < lots.length; i += batchSize) {
-    //   console.log('edict', lots[i])
-    //   await db.query(sql`
-    //     INSERT INTO "edict" ("entry", "reading", "english")
-    //     VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
-    //   `)
-    // }
+    const batchSize = 300
 
     const lots = await readEdict('cache/edict2')
     lots.shift()

@@ -2,23 +2,14 @@ import 'log-buffer'
 
 import fs from 'fs'
 
+import createConnectionPool, { sql } from '@databases/sqlite'
 // @ts-ignore
 import { Iconv } from 'iconv'
 import XRegExp from 'xregexp'
 
-/**
- * KANJI-1;KANJI-2 [KANA-1;KANA-2] /(general information) (see xxxx) gloss/gloss/.../
- *
- * 収集(P);蒐集;拾集;収輯 [しゅうしゅう] /(n,vs) gathering up/collection/accumulation/(P)/
- *
- * In addition, the EDICT2 has as its last field the sequence number of the entry.
- * This matches the "ent_seq" entity value in the XML edition. The field has the format: EntLnnnnnnnnX.
- * The EntL is a unique string to help identify the field.
- * The "X", if present, indicates that an audio clip of the entry reading is available from the JapanesePod101.com site.
- */
-async function readEdict(filename: string) {
+async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
   const dbEdict = {
-    // lots: [] as ReturnType<typeof sql>[],
+    lots: [] as ReturnType<typeof sql>[],
     insertOne(p: {
       kanji: string
       onyomi: string[]
@@ -26,8 +17,11 @@ async function readEdict(filename: string) {
       nanori: string[]
       english: string[]
     }) {
-      // this.lots.push(sql`(${p.entry}, ${p.reading}, ${p.english})`)
-      if (p.nanori.length) console.log(p)
+      this.lots.push(
+        sql`(${p.kanji}, ${JSON.stringify(p.onyomi)}, ${JSON.stringify(
+          p.kunyomi
+        )}, ${JSON.stringify(p.nanori)}, ${JSON.stringify(p.english)})`
+      )
     },
   }
 
@@ -83,7 +77,7 @@ async function readEdict(filename: string) {
     })
   }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let s = ''
     fs.createReadStream(filename)
       .pipe(new Iconv('EUC-JP', 'UTF-8'))
@@ -98,39 +92,49 @@ async function readEdict(filename: string) {
       .on('error', reject)
       .on('end', async () => {
         parseRow(s)
-        resolve()
+        resolve(dbEdict.lots)
       })
   })
 }
 
 async function main() {
-  await readEdict('cache/kanjd212')
+  const db = createConnectionPool('cache/kanjidic.db')
 
-  // const db = createConnectionPool(process.env.DATABASE_URL)
+  await db.query(sql`
+  CREATE TABLE IF NOT EXISTS "kanji" (
+    "kanji"     TEXT NOT NULL PRIMARY KEY,
+    "onyomi"    JSON NOT NULL,
+    "kunyomi"   JSON NOT NULL,
+    "nanori"    JSON NOT NULL,
+    "english"   JSON NOT NULL
+  )
+  `)
 
-  // await db.tx(async () => {
-  //   const batchSize = 5000
+  await db.tx(async (db) => {
+    const batchSize = 150
 
-  //   // let lots = await readEdict('cache/edict')
-  //   // lots.shift()
+    let lots = await readEdict('cache/kanjidic')
 
-  //   // for (let i = 0; i < lots.length; i += batchSize) {
-  //   //   console.log('edict', lots[i])
-  //   //   await db.query(sql`
-  //   //     INSERT INTO "edict" ("entry", "reading", "english")
-  //   //     VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
-  //   //   `)
-  //   // }
+    for (let i = 0; i < lots.length; i += batchSize) {
+      console.log('kanjidic', lots[i])
+      await db.query(sql`
+        INSERT INTO "kanji" ("kanji", "onyomi", "kunyomi", "nanori", "english")
+        VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+      `)
+    }
 
-  //   const lots = await readEdict('cache/kanjidic')
-  //   lots.shift()
+    lots = await readEdict('cache/kanjd212')
 
-  //   for (let i = 0; i < lots.length; i += batchSize) {
-  //     console.log('edict2', lots[i])
-  //   }
-  // })
+    for (let i = 0; i < lots.length; i += batchSize) {
+      console.log('kanjd212', lots[i])
+      await db.query(sql`
+        INSERT INTO "kanji" ("kanji", "onyomi", "kunyomi", "nanori", "english")
+        VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+      `)
+    }
+  })
 
-  // await db.dispose()
+  await db.dispose()
 }
 
 if (require.main === module) {
