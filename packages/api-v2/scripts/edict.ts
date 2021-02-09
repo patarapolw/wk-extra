@@ -93,7 +93,7 @@ async function main() {
   const db = createConnectionPool(process.env.DATABASE_URL)
 
   await db.query(sql`
-  ALTER TABLE "edict" ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
+  ALTER TABLE "d_edict" ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
     JSON.stringify(
       S.shape({
         entry: S.list(S.string()).minItems(1),
@@ -113,7 +113,7 @@ async function main() {
     for (let i = 0; i < lots.length; i += batchSize) {
       console.log('edict2', lots[i])
       await db.query(sql`
-        INSERT INTO "edict" ("data")
+        INSERT INTO "d_edict" ("data")
         VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
       `)
     }
