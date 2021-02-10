@@ -1,93 +1,84 @@
-import sqlite3 from 'better-sqlite3'
-import S from 'jsonschema-definer'
+import fs from 'fs'
 
-import { db, dbCedict, dbInit, ensureSchema, sCedict } from '@/dict'
+import createConnectionPool, { sql } from '@databases/sqlite'
+import sqlite3 from 'better-sqlite3'
 
 async function main() {
-  const sql = sqlite3(
-    '/Users/patarapolw/projects/zhquiz-v2/packages/server/assets/zh.db',
-    { readonly: true }
+  const db = createConnectionPool('cache/cedict.db')
+  const zh = sqlite3(
+    '/home/polv/projects/zhquiz/submodules/go-zhquiz/assets/zh.db'
   )
+  const stmt = zh.prepare(/* sql */ `
+  SELECT frequency f FROM vocab WHERE simplified = @simplified AND COALESCE(traditional = @traditional, TRUE) AND pinyin = @pinyin
+  `)
 
-  const addSpaceToSlash = (s: string) => {
-    ensureSchema(S.string(), s)
+  const dbCedict = {
+    lots: [] as ReturnType<typeof sql>[],
+    insertOne(r: string) {
+      if (!r || r[0] === '#') {
+        return
+      }
 
-    const indices = indicesOf(s, '/')
-    if (indices.length > 0) {
-      indices.map((c, i) => {
-        c += i * 2
-        s = s.substr(0, c) + ' / ' + s.substr(c + 1)
-      })
-    }
+      r = r.trim()
 
-    return s
+      const m = new RegExp('^([^ ]+) ([^ ]+) \\[([^\\]]+)\\] /(.+)/$').exec(r)
+
+      if (!m) {
+        return
+      }
+
+      const p = {
+        simplified: m[1],
+        traditional: m[2] === m[1] ? null : m[2],
+        pinyin: m[3],
+      }
+
+      const { f = null } = stmt.get(p) || {}
+
+      this.lots.push(
+        sql`(${m[1]}, ${p.traditional}, ${m[3]}, ${JSON.stringify(
+          m[4].split('/')
+        )}, ${f})`
+      )
+    },
   }
 
-  await dbInit()
-
-  const vMap = new Map<string, any[]>()
-  sql
-    .prepare(
-      /* sql */ `
-  SELECT simplified, traditional, v.pinyin pinyin, v.english english, frequency
-  FROM vocab v
-  LEFT JOIN token t ON simplified = [entry]
-  `
-    )
-    .all()
-    .map(({ simplified, traditional, pinyin, english }) => {
-      const data = vMap.get(simplified) || []
-      data.push({ traditional, pinyin, english })
-      vMap.set(simplified, data)
-    })
-
-  dbCedict.insert(
-    Array.from(vMap).flatMap(([simplified, vs]) => {
-      const tradSet = new Set<string>()
-      const pinSet = new Set<string>()
-      const engSet = new Set<string>()
-      const freqSet = new Set<number>()
-
-      vs.map(({ traditional, pinyin, english, frequency }) => {
-        if (traditional) {
-          tradSet.add(traditional)
-        }
-        pinSet.add(pinyin)
-        engSet.add(addSpaceToSlash(english))
-        if (frequency) {
-          freqSet.add(frequency)
-        }
-      })
-
-      return ensureSchema(sCedict, {
-        entry: simplified,
-        alt: tradSet.size ? Array.from(tradSet).sort() : undefined,
-        reading: Array.from(pinSet).sort(),
-        english: Array.from(engSet).sort(),
-      })
-    })
-  )
-
-  db.save(() => {
-    db.close()
+  const rows = fs
+    .readFileSync('cache/cedict_1_0_ts_utf-8_mdbg.txt', 'utf-8')
+    .split('\n')
+  rows.map((r) => {
+    dbCedict.insertOne(r)
   })
 
-  sql.close()
-}
+  await db.query(sql`
+    CREATE TABLE cedict (
+      simplified      TEXT NOT NULL,
+      traditional     TEXT,
+      reading         TEXT NOT NULL,
+      english         JSON NOT NULL,
+      frequency       FLOAT
+    );
 
-function notSpace(c: string) {
-  return c && c !== ' '
-}
+    CREATE UNIQUE INDEX idx_cedict_u ON cedict(simplified, traditional, reading);
+    CREATE INDEX idx_cedict_simplified ON cedict(simplified);
+    CREATE INDEX idx_cedict_traditional ON cedict(traditional);
+    CREATE INDEX idx_cedict_reading ON cedict(reading);
+  `)
 
-function indicesOf(str: string, c: string) {
-  const indices: number[] = []
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === c && notSpace(str[i - 1]) && notSpace(str[i + 1])) {
-      indices.push(i)
+  await db.tx(async (db) => {
+    const batchSize = 100
+
+    const lots = dbCedict.lots
+
+    for (let i = 0; i < lots.length; i += batchSize) {
+      await db.query(sql`
+        INSERT INTO cedict (simplified, traditional, reading, english, frequency)
+        VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+      `)
     }
-  }
+  })
 
-  return indices
+  await db.dispose()
 }
 
 if (require.main === module) {
