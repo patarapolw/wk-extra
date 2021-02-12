@@ -247,5 +247,5 @@ export async function upload() {
 }
 
 if (require.main === module) {
-  upload()
+  makePair()
 }

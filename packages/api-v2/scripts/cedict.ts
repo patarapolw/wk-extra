@@ -28,15 +28,15 @@ async function main() {
       }
 
       const p = {
-        simplified: m[1],
-        traditional: m[2] === m[1] ? null : m[2],
+        simplified: m[2],
+        traditional: m[2] === m[1] ? null : m[1],
         pinyin: m[3],
       }
 
       const { f = null } = stmt.get(p) || {}
 
       this.lots.push(
-        sql`(${m[1]}, ${p.traditional}, ${m[3]}, ${JSON.stringify(
+        sql`(${p.simplified}, ${p.traditional}, ${p.pinyin}, ${JSON.stringify(
           m[4].split('/')
         )}, ${f})`
       )
