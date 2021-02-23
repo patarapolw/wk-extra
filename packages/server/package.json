@@ -7,7 +7,8 @@
     "start": "node -r tsconfig-paths/register .",
     "ts": "ts-node -O '{\"noImplicitAny\":false}' -r tsconfig-paths/register",
     "dev": "NODE_ENV=development ts-node-dev --transpile-only -r tsconfig-paths/register src/index.ts",
-    "build": "tsc -P src/tsconfig.json"
+    "build": "tsc -P src/tsconfig.json",
+    "docker:ts": "docker exec -it server_wk-extra_1 yarn ts"
   },
   "dependencies": {
     "@typegoose/typegoose": "^7.4.8",

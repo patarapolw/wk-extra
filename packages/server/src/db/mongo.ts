@@ -15,20 +15,22 @@ setGlobalOptions({ options: { allowMixed: Severity.ALLOW } })
 
 mongoose.pluralize((null as unknown) as undefined)
 
-@index({ ja: 'text', en: 'text' })
-class WkSentence {
-  @prop({ required: true, index: true }) ja!: string
+@index({ en: 'text' })
+class Sentence {
+  @prop({ required: true, unique: true }) ja!: string
+  @prop({ index: true }) word!: string[]
+
   @prop({ required: true }) en!: string
 
-  @prop({ index: true }) character?: string
+  @prop({ index: true }) vocab?: string
   @prop({ index: true }) level?: number
 
-  @prop({ index: true }) source!: 'wanikani' | 'tatoeba'
+  @prop({ required: true, index: true }) source!: 'wanikani' | 'tatoeba'
 
   @prop({ index: true, default: () => [] }) tag!: string[]
 }
 
-export const WkSentenceModel = getModelForClass(WkSentence, {
+export const SentenceModel = getModelForClass(Sentence, {
   schemaOptions: { timestamps: true },
 })
 
@@ -198,6 +200,37 @@ class Quiz {
 }
 
 export const QuizModel = getModelForClass(Quiz, {
+  schemaOptions: { timestamps: true },
+})
+
+@index({ description: 'text' })
+class Library {
+  @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
+
+  @prop({
+    index: true,
+    validate: (it: string[]) =>
+      Array.isArray(it) &&
+      it.length > 0 &&
+      it.every((el) => typeof el === 'string'),
+  })
+  userId!: string[]
+
+  @prop({ required: true }) title!: string
+  @prop({
+    index: true,
+    validate: (it: string[]) =>
+      Array.isArray(it) &&
+      it.length > 0 &&
+      it.every((el) => typeof el === 'string'),
+  })
+  entries!: string[]
+
+  @prop({ default: () => [], index: true }) tag!: string[]
+  @prop({ default: '' }) description!: string
+}
+
+export const LibraryModel = getModelForClass(Library, {
   schemaOptions: { timestamps: true },
 })
 
