@@ -73,6 +73,8 @@ class Dict {
   source!: 'wanikani' | 'edict' | 'kanjidic'
 
   @prop({ index: true, default: () => [] }) tag!: string[]
+
+  @prop({ index: true }) frequency?: number
 }
 
 export const DictModel = getModelForClass(Dict, {

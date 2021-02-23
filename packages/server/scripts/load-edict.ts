@@ -1,5 +1,6 @@
 import { DictModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
+import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
 import hepburn from 'hepburn'
 
@@ -19,17 +20,31 @@ async function main() {
     `
     )
     .all()
+    .map((it) => {
+      it.entry = JSON.parse(it.entry).map((el: string) =>
+        el.replace(/\(.+\)$/, '')
+      )
+      return it
+    })
 
-  const chunkSize = 1000
+  const fMap: Record<string, number> = await axios
+    .post(
+      'http://localhost:8000/wordfreq?lang=ja',
+      Array.from(new Set(items.flatMap((it) => it.entry)))
+    )
+    .then((r) => r.data)
+
+  const chunkSize = 10000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
     await DictModel.insertMany(
       items.slice(i, i + chunkSize).map((it) => {
-        it.entry = JSON.parse(it.entry)
         it.reading = JSON.parse(it.reading)
         if (!it.reading.length) {
           it.reading = it.entry
         }
+        const frequency =
+          Math.max(0, ...it.entry.map((el: string) => fMap[el])) || undefined
 
         return {
           entry: it.entry,
@@ -43,6 +58,7 @@ async function main() {
           english: JSON.parse(it.english).map((r: string) => r),
           type: 'vocabulary',
           source: 'edict',
+          frequency,
         }
       })
     )

@@ -1,5 +1,6 @@
 import { DictModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
+import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
 import hepburn from 'hepburn'
 
@@ -22,7 +23,14 @@ async function main() {
     )
     .all()
 
-  await DictModel.deleteMany({ source: 'kanjidic' })
+  const fMap: Record<string, number> = await axios
+    .post(
+      'http://localhost:8000/wordfreq?lang=ja',
+      items.map((it) => it.kanji)
+    )
+    .then((r) => r.data)
+
+  console.log(fMap)
 
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
@@ -57,6 +65,7 @@ async function main() {
           english: JSON.parse(it.english).map((r: string) => r),
           type: 'kanji',
           source: 'kanjidic',
+          frequency: fMap[it.kanji],
         }
       })
     )
