@@ -52,7 +52,7 @@ class Dict {
   entry!: string[]
 
   @prop({ default: () => [] }) reading!: {
-    type?: string
+    type?: 'kunyomi' | 'onyomi' | 'nanori'
     kana: string[]
   }[]
 
@@ -83,9 +83,9 @@ export const DictModel = getModelForClass(Dict, {
 
 class Radical {
   @prop({ required: true, index: true }) entry!: string
-  @prop({ default: () => [] }) sub!: string[]
-  @prop({ default: () => [] }) sup!: string[]
-  @prop({ default: () => [] }) var!: string[]
+  @prop({ default: () => [], index: true }) sub!: string[]
+  @prop({ default: () => [], index: true }) sup!: string[]
+  @prop({ default: () => [], index: true }) var!: string[]
 }
 
 export const RadicalModel = getModelForClass(Radical)
