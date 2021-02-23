@@ -25,7 +25,12 @@ class Sentence {
   @prop({ index: true }) vocab?: string
   @prop({ index: true }) level?: number
 
-  @prop({ required: true, index: true }) source!: 'wanikani' | 'tatoeba'
+  @prop({
+    required: true,
+    index: true,
+    validate: (v: string) => ['wanikani', 'tatoeba'].includes(v),
+  })
+  source!: 'wanikani' | 'tatoeba'
 
   @prop({ index: true, default: () => [] }) tag!: string[]
 }
@@ -52,19 +57,21 @@ class Dict {
     kana: string[]
   }[]
 
-  @prop({
-    validate: (it: string[]) =>
-      Array.isArray(it) &&
-      it.length > 0 &&
-      it.every((el) => typeof el === 'string'),
-  })
-  english!: string[]
+  @prop({ default: () => [] }) english!: string[]
 
   @prop({ index: true }) level?: number
   @prop() audio?: Record<string, string>
 
-  @prop({ index: true }) type!: 'kanji' | 'vocabulary'
-  @prop({ index: true }) source!: 'wanikani' | 'edict' | 'kanjidic'
+  @prop({
+    index: true,
+    validate: (v: string) => ['kanji', 'vocabulary'].includes(v),
+  })
+  type!: 'kanji' | 'vocabulary'
+  @prop({
+    index: true,
+    validate: (v: string) => ['wanikani', 'edict', 'kanjidic'].includes(v),
+  })
+  source!: 'wanikani' | 'edict' | 'kanjidic'
 
   @prop({ index: true, default: () => [] }) tag!: string[]
 }
@@ -143,7 +150,11 @@ class Quiz {
   @prop({ required: true, index: true }) userId!: string
 
   @prop({ required: true }) entry!: string
-  @prop({ required: true }) type!: 'kanji' | 'vocabulary' | 'sentence'
+  @prop({
+    required: true,
+    validate: (v: string) => ['kanji', 'vocabulary', 'sentence'].includes(v),
+  })
+  type!: 'kanji' | 'vocabulary' | 'sentence'
   @prop({ required: true }) direction!: 'je' | 'ej'
 
   @prop({ index: true }) srsLevel?: number
@@ -230,6 +241,11 @@ class Library {
       it.every((el) => typeof el === 'string'),
   })
   entries!: string[]
+  @prop({
+    required: true,
+    validate: (v: string) => ['kanji', 'vocabulary', 'sentence'].includes(v),
+  })
+  type!: 'kanji' | 'vocabulary' | 'sentence'
 
   @prop({ default: () => [], index: true }) tag!: string[]
   @prop({ default: '' }) description!: string
