@@ -62,6 +62,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
   {
     const sQuery = S.shape({
       q: S.string(),
+      limit: S.integer().optional(),
     })
 
     const sResult = S.shape({
@@ -102,7 +103,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req): Promise<typeof sResult.type> => {
-        const { q } = req.query
+        const { q, limit } = req.query
 
         const dCond = makeJa.parse(q)
         const cond = (source?: 'wanikani') => {
@@ -113,21 +114,28 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           return { $and }
         }
 
-        let result = await DictModel.find(cond('wanikani'))
+        let docQuery = DictModel.find(cond('wanikani'))
           .sort('-frequency')
           .select({
             _id: 0,
             entry: 1,
           })
-          .then((rs) => rs.map((r) => r.entry[0]!))
+        if (limit) {
+          docQuery = docQuery.limit(limit)
+        }
+
+        let result = await docQuery.then((rs) => rs.map((r) => r.entry[0]!))
+
         if (!result.length) {
-          result = await DictModel.find(cond())
-            .sort('-frequency')
-            .select({
-              _id: 0,
-              entry: 1,
-            })
-            .then((rs) => rs.map((r) => r.entry[0]!))
+          docQuery = DictModel.find(cond()).sort('-frequency').select({
+            _id: 0,
+            entry: 1,
+          })
+          if (limit) {
+            docQuery = docQuery.limit(limit)
+          }
+
+          result = await docQuery.then((rs) => rs.map((r) => r.entry[0]!))
         }
 
         return { result }

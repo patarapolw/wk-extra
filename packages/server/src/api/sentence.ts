@@ -67,7 +67,9 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
     }
 
     const sQuery = S.shape({
-      q: S.string(),
+      q: S.string().optional(),
+      limit: S.integer().optional(),
+      page: S.integer().optional(),
     })
 
     const sResult = S.shape({
@@ -99,7 +101,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req): Promise<typeof sResult.type> => {
-        const { q } = req.query
+        const { q, page, limit = 5 } = req.query
 
         const dCond = makeJa.parse(q)
         const cond = (source?: 'wanikani') => {
@@ -110,20 +112,17 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           return { $and }
         }
 
-        let result = await SentenceModel.find(cond('wanikani'))
-          .select({
-            _id: 1,
-            ja: 1,
-          })
-          .then((rs) => rs.map((r) => r.ja))
-        if (!result.length) {
-          result = await SentenceModel.find(cond())
-            .select({
-              _id: 0,
-              ja: 1,
-            })
-            .then((rs) => rs.map((r) => r.ja))
-        }
+        let result = await SentenceModel.aggregate([
+          { $match: cond() },
+          ...(page
+            ? [{ $skip: (page - 1) * limit }]
+            : [
+                { $addFields: { _sort: { $rand: {} } } },
+                { $sort: { _sort: 1 } },
+              ]),
+          { $limit: limit },
+          { $project: { _id: 0, ja: 1 } },
+        ]).then((rs) => rs.map((r) => r.ja))
 
         return { result }
       }

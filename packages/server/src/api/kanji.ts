@@ -82,6 +82,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
   {
     const sQuery = S.shape({
       q: S.string(),
+      limit: S.integer().optional(),
     })
 
     const sResult = S.shape({
@@ -177,7 +178,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req): Promise<typeof sResult.type> => {
-        const { q } = req.query
+        const { q, limit } = req.query
 
         const dCond = makeJa.parse(q)
         const cond = (source?: 'wanikani') => {
@@ -228,6 +229,10 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
                   .sort((a, b) => (fMap.get(b) || 0) - (fMap.get(a) || 0))
               )
           }
+        }
+
+        if (limit) {
+          result = result.slice(0, limit)
         }
 
         return { result }

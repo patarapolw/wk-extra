@@ -12,7 +12,11 @@ export class QSplit {
     }
   ) {}
 
-  parse(q: string) {
+  parse(q?: string) {
+    if (!q) {
+      return null
+    }
+
     const $and: Query[] = []
     const $or: Query[] = []
     const $not: Query[] = []
