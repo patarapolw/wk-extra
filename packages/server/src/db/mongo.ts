@@ -41,7 +41,6 @@ export const SentenceModel = getModelForClass(Sentence, {
 
 @index({ english: 'text' })
 @index({ 'reading.kana': 1 })
-@index({ 'reading.romaji': 1 })
 class Dict {
   @prop({
     index: true,
@@ -52,7 +51,7 @@ class Dict {
   })
   entry!: string[]
 
-  @prop({ index: true, default: () => [] }) reading!: {
+  @prop({ default: () => [] }) reading!: {
     type?: string
     kana: string[]
   }[]
@@ -79,6 +78,15 @@ class Dict {
 export const DictModel = getModelForClass(Dict, {
   schemaOptions: { timestamps: true },
 })
+
+class Radical {
+  @prop({ required: true, index: true }) entry!: string
+  @prop({ default: () => [] }) sub!: string[]
+  @prop({ default: () => [] }) sup!: string[]
+  @prop({ default: () => [] }) var!: string[]
+}
+
+export const RadicalModel = getModelForClass(Radical)
 
 class User {
   @prop({ required: true }) _id!: string
