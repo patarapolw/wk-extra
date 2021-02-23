@@ -1,0 +1,43 @@
+{
+  "name": "@wk-extra/server",
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "scripts": {
+    "ts": "ts-node -O '{\"noImplicitAny\":false}'",
+    "dev": "NODE_ENV=development ts-node-dev --transpile-only src/index.ts",
+    "build": "tsc -P src/tsconfig.json"
+  },
+  "dependencies": {
+    "@typegoose/typegoose": "^7.4.8",
+    "axios": "^0.21.1",
+    "dayjs": "^1.10.4",
+    "fastify": "^3.12.0",
+    "fastify-csrf": "^3.0.1",
+    "fastify-helmet": "^5.2.0",
+    "fastify-secure-session": "^2.3.1",
+    "fastify-static": "^4.0.1",
+    "jsonschema-definer": "^1.3.2",
+    "mecab-lite": "^0.0.8",
+    "mongoose": "5.10.18",
+    "node-gtts": "^2.0.2",
+    "strip-ansi-stream": "^1.0.0",
+    "xregexp": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/mongoose": "^5.10.3",
+    "@types/pino": "^6.3.6",
+    "@types/xregexp": "^4.3.0",
+    "import-sort-parser-typescript": "^6.0.0",
+    "pino-pretty": "^4.5.0",
+    "ts-node": "^9.1.1",
+    "ts-node-dev": "^1.1.1",
+    "typescript": "^4.1.5"
+  },
+  "importSort": {
+    ".ts, .js": {
+      "parser": "typescript",
+      "style": "module"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+version: '3'
+services:
+  wk-extra:
+    build: .
+    image: wk-extra
+    environment:
+      - MONGO_URI
+      - WANIKANI_API_KEY
+    ports:
+      - '5000:8080'
+    volumes:
+      - ./node_modules:/app/node_modules
+      - ./src:/app/src
+    entrypoint: ['yarn', 'dev']
