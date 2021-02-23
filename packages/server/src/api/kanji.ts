@@ -163,31 +163,45 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           return { $and }
         }
 
-        let result: string[] = await DictModel.find(cond('wanikani'))
+        let rs = await DictModel.find(cond('wanikani'))
+          .sort('-frequency')
           .select({
             _id: 0,
             entry: 1,
+            frequency: 1,
           })
-          .then((rs) => rs.map((r) => r.entry[0]!))
-        if (!result.length) {
-          result = await DictModel.find(cond())
-            .select({
-              _id: 0,
-              entry: 1,
-            })
-            .then((rs) => rs.map((r) => r.entry[0]!))
+        if (!rs.length) {
+          rs = await DictModel.find(cond()).sort('-frequency').select({
+            _id: 0,
+            entry: 1,
+            frequency: 1,
+          })
         }
 
-        if (result.length) {
+        const fMap = new Map<string, number>()
+        let result = rs.map((r) => {
+          if (r.frequency) {
+            fMap.set(r.entry[0]!, r.frequency)
+          }
+
+          return r.entry[0]!
+        })
+
+        if (rs.length) {
           const rCond = makeRad.parse(q)
           if (rCond) {
             rCond.$and.push({ entry: { $in: result } })
+
             result = await RadicalModel.find(rCond)
               .select({
                 _id: 0,
                 entry: 1,
               })
-              .then((rs) => rs.map((r) => r.entry))
+              .then((rs) =>
+                rs
+                  .map((r) => r.entry)
+                  .sort((a, b) => (fMap.get(b) || 0) - (fMap.get(a) || 0))
+              )
           }
         }
 
