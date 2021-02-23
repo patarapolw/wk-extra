@@ -53,6 +53,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/hepburn@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@types/hepburn/-/hepburn-1.2.0.tgz#8f6e1f03e9114b9af1ba9c94d476af4bcbc8d683"
+  integrity sha512-MlKJ0tSNB1L0Ylas0JwPykYTnQCIZWcd9TKOHmh2RmTwQrU9G4J39zUPh+eVVd8hZlyfYILdhw7vIE81A5sAAw==
+
 "@types/integer@*":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@types/integer/-/integer-1.0.1.tgz#025d87e30d97f539fcc6087372af7d3672ffbbe6"
@@ -360,6 +365,11 @@ buffer@^5.5.0:
   dependencies:
     base64-js "^1.3.1"
     ieee754 "^1.1.13"
+
+bulk-replace@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/bulk-replace/-/bulk-replace-0.0.1.tgz#f095682a896abd4b3d9e08de409cc222e213f9dd"
+  integrity sha1-8JVoKolqvUs9ngjeQJzCIuIT+d0=
 
 camelcase-keys@^2.0.0:
   version "2.1.0"
@@ -1005,6 +1015,13 @@ helmet@^4.0.0:
   version "4.4.1"
   resolved "https://registry.yarnpkg.com/helmet/-/helmet-4.4.1.tgz#a17e1444d81d7a83ddc6e6f9bc6e2055b994efe7"
   integrity sha512-G8tp0wUMI7i8wkMk2xLcEvESg5PiCitFMYgGRc/PwULB0RVhTP5GFdxOwvJwp9XVha8CuS8mnhmE8I/8dx/pbw==
+
+hepburn@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/hepburn/-/hepburn-1.2.0.tgz#81d01bf3dc7ea83370fac5bbcbfa0f9f1a0f819f"
+  integrity sha512-xWjHb03dN/ivNcqG2vqA//sHQ0oapYGZ9QV/2TR7m2+cggxzoVpbDxZn9s/Zm1tF88/7a1IpdZyn00tNP5oABA==
+  dependencies:
+    bulk-replace "0.0.1"
 
 hosted-git-info@^2.1.4:
   version "2.8.8"

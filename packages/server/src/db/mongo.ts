@@ -35,6 +35,8 @@ export const SentenceModel = getModelForClass(Sentence, {
 })
 
 @index({ english: 'text' })
+@index({ 'reading.kana': 1 })
+@index({ 'reading.romaji': 1 })
 class Dict {
   @prop({
     index: true,
@@ -45,7 +47,10 @@ class Dict {
   })
   entry!: string[]
 
-  @prop({ index: true, default: () => [] }) reading!: string[]
+  @prop({ index: true, default: () => [] }) reading!: {
+    type?: string
+    kana: string[]
+  }[]
 
   @prop({
     validate: (it: string[]) =>
@@ -58,7 +63,7 @@ class Dict {
   @prop({ index: true }) level?: number
   @prop() audio?: Record<string, string>
 
-  @prop({ index: true }) type!: 'kanji' | 'vocab'
+  @prop({ index: true }) type!: 'kanji' | 'vocabulary'
   @prop({ index: true }) source!: 'wanikani' | 'edict' | 'kanjidic'
 
   @prop({ index: true, default: () => [] }) tag!: string[]
@@ -123,7 +128,7 @@ class Extra {
 
   @prop() audio?: Record<string, string>
 
-  @prop({ index: true }) type!: 'kanji' | 'vocab' | 'sentence'
+  @prop({ index: true }) type!: 'kanji' | 'vocabulary' | 'sentence'
   @prop({ index: true, default: () => [] }) tag!: string[]
 }
 
@@ -138,7 +143,7 @@ class Quiz {
   @prop({ required: true, index: true }) userId!: string
 
   @prop({ required: true }) entry!: string
-  @prop({ required: true }) type!: 'kanji' | 'vocab' | 'sentence'
+  @prop({ required: true }) type!: 'kanji' | 'vocabulary' | 'sentence'
   @prop({ required: true }) direction!: 'je' | 'ej'
 
   @prop({ index: true }) srsLevel?: number
