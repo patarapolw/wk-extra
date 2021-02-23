@@ -1,6 +1,7 @@
 import { DictModel, RadicalModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
+import hepburn from 'hepburn'
 import S from 'jsonschema-definer'
 import XRegExp from 'xregexp'
 
@@ -125,13 +126,37 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
         }
 
         return {
-          $or: [{ 'reading.kana': v }, { $text: { $search: v } }],
+          $or: [
+            { 'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)) },
+            { $text: { $search: v } },
+          ],
         }
       },
       fields: {
-        onyomi: { ':': (v) => ({ reading: { type: 'onyomi', kana: v } }) },
-        kunyomi: { ':': (v) => ({ reading: { type: 'kunyomi', kana: v } }) },
-        nanori: { ':': (v) => ({ reading: { type: 'nanori', kana: v } }) },
+        onyomi: {
+          ':': (v) => ({
+            reading: {
+              type: 'onyomi',
+              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+            },
+          }),
+        },
+        kunyomi: {
+          ':': (v) => ({
+            reading: {
+              type: 'kunyomi',
+              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+            },
+          }),
+        },
+        nanori: {
+          ':': (v) => ({
+            reading: {
+              type: 'nanori',
+              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+            },
+          }),
+        },
         reading: {
           ':': (v) => ({ 'reading.kana': v }),
         },

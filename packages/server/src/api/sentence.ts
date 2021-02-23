@@ -1,8 +1,9 @@
-import { DictModel, UserModel } from '@/db/mongo'
+import { SentenceModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
-import hepburn from 'hepburn'
 import S from 'jsonschema-definer'
+import Mecab from 'mecab-lite'
+import XRegExp from 'xregexp'
 
 const vocabRouter: FastifyPluginAsync = async (f) => {
   {
@@ -11,9 +12,8 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
     })
 
     const sResult = S.shape({
-      entry: S.list(S.string()),
-      reading: S.list(S.string()),
-      english: S.list(S.string()),
+      ja: S.string(),
+      en: S.string(),
     })
 
     f.get<{
@@ -31,19 +31,20 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
       async (req): Promise<typeof sResult.type> => {
         const { entry } = req.query
 
-        let dict = await DictModel.findOne({
-          entry,
-          type: 'vocabulary',
+        let dict = await SentenceModel.findOne({
+          ja: entry,
           source: 'wanikani',
-        })
+        }).select({ _id: 0, ja: 1, en: 1 })
         if (!dict) {
-          dict = await DictModel.find({
-            entry,
-            type: 'vocabulary',
-          })
-            .sort('-frequency')
-            .limit(1)
-            .then((rs) => rs[0] || null)
+          dict = await SentenceModel.aggregate([
+            {
+              $match: {
+                ja: entry,
+              },
+            },
+            { $sample: { size: 1 } },
+            { $project: { _id: 0, ja: 1, en: 1 } },
+          ]).then((rs) => rs[0] || null)
         }
 
         if (!dict) {
@@ -51,15 +52,20 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
         }
 
         return {
-          entry: dict.entry,
-          reading: dict.reading.map((r) => r.kana[0]!),
-          english: dict.english,
+          ja: dict.ja,
+          en: dict.en,
         }
       }
     )
   }
 
   {
+    const mecab = new Mecab()
+    const reJa = XRegExp('[\\p{Han}\\p{Hiragana}\\p{Hiragana}]')
+    const getJa = (s: string) => {
+      return mecab.wakatigakiSync(s).filter((v) => reJa.test(v))
+    }
+
     const sQuery = S.shape({
       q: S.string(),
     })
@@ -71,20 +77,11 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
     const makeJa = new QSplit({
       default: (v) => {
         return {
-          $or: [
-            { entry: v },
-            { 'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)) },
-            { $text: { $search: v } },
-          ],
+          $or: [{ word: { $in: getJa(v) } }, { $text: { $search: v } }],
         }
       },
       fields: {
-        entry: { ':': (v) => ({ entry: v }) },
-        reading: {
-          ':': (v) => ({
-            'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)),
-          }),
-        },
+        entry: { ':': (v) => ({ word: { $in: getJa(v) } }) },
         english: { ':': (v) => ({ $text: { $search: v } }) },
       },
     })
@@ -106,28 +103,26 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
 
         const dCond = makeJa.parse(q)
         const cond = (source?: 'wanikani') => {
-          const $and = [{ type: 'vocabulary' as 'vocabulary', source }]
+          const $and = [{ source }]
           if (dCond) {
             $and.push(dCond as any)
           }
           return { $and }
         }
 
-        let result = await DictModel.find(cond('wanikani'))
-          .sort('-frequency')
+        let result = await SentenceModel.find(cond('wanikani'))
           .select({
-            _id: 0,
-            entry: 1,
+            _id: 1,
+            ja: 1,
           })
-          .then((rs) => rs.map((r) => r.entry[0]!))
+          .then((rs) => rs.map((r) => r.ja))
         if (!result.length) {
-          result = await DictModel.find(cond())
-            .sort('-frequency')
+          result = await SentenceModel.find(cond())
             .select({
               _id: 0,
-              entry: 1,
+              ja: 1,
             })
-            .then((rs) => rs.map((r) => r.entry[0]!))
+            .then((rs) => rs.map((r) => r.ja))
         }
 
         return { result }
@@ -156,13 +151,12 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
-        const [r] = await DictModel.aggregate([
+        const [r] = await SentenceModel.aggregate([
           {
             $match: {
               $and: [
                 { level: { $gte: u.level } },
                 { level: { $lte: u.levelMin } },
-                { type: 'vocabulary' },
               ],
             },
           },
@@ -170,8 +164,8 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           {
             $project: {
               _id: 0,
-              result: { $first: 'entry' },
-              english: 1,
+              result: 'ja',
+              english: 'en',
               level: 1,
             },
           },
@@ -183,7 +177,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
 
         return {
           result: r.result,
-          english: r.english.join(' / '),
+          english: r.english,
           level: r.level,
         }
       }
