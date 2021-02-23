@@ -1,6 +1,7 @@
 import { execSync } from 'child_process'
 import fs from 'fs'
 
+import { isDevelopment } from '@/shared'
 import axios from 'axios'
 import { FastifyPluginAsync } from 'fastify'
 import csrf from 'fastify-csrf'
@@ -21,14 +22,16 @@ const apiRouter: FastifyPluginAsync = async (f) => {
     sessionPlugin: 'fastify-secure-session',
   })
 
-  // f.addHook('onRequest', (req, reply, next) => {
-  //   if (['/api/doc'].some((s) => req.url.startsWith(s))) {
-  //     next()
-  //     return
-  //   }
+  if (!isDevelopment) {
+    f.addHook('onRequest', (req, reply, next) => {
+      if (['/api/doc', '/api/settings'].some((s) => req.url.startsWith(s))) {
+        next()
+        return
+      }
 
-  //   f.csrfProtection(req, reply, next)
-  // })
+      f.csrfProtection(req, reply, next)
+    })
+  }
 
   f.get('/settings', async (_, reply) => {
     return {
@@ -37,11 +40,7 @@ const apiRouter: FastifyPluginAsync = async (f) => {
   })
 
   f.addHook('preHandler', async (req) => {
-    if (
-      ['/api/doc', '/api/settings', '/api/util'].some((s) =>
-        req.url.startsWith(s)
-      )
-    ) {
+    if (['/api/doc', '/api/settings'].some((s) => req.url.startsWith(s))) {
       return
     }
 
@@ -55,6 +54,7 @@ const apiRouter: FastifyPluginAsync = async (f) => {
         username: string
         level: number
         preferences: {
+          default_voice_actor_id: number
           reviews_autoplay_audio: boolean
         }
       }

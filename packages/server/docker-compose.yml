@@ -9,6 +9,7 @@ services:
     ports:
       - '5000:8080'
     volumes:
+      - ./scripts:/app/scripts
       - ./node_modules:/app/node_modules
       - ./src:/app/src
     entrypoint: ['yarn', 'dev']

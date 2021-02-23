@@ -8,9 +8,11 @@ import fastifyStatic from 'fastify-static'
 import pino from 'pino'
 
 import apiRouter from './api'
+import { mongoConnect } from './db/mongo'
+import { isDevelopment } from './shared'
 
 async function main() {
-  const isDevelopment = process.env.NODE_ENV === 'development'
+  await mongoConnect()
 
   const logThrough = new stream.PassThrough()
   const logger = pino(

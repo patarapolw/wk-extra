@@ -1,0 +1,2 @@
+- `docker-compose.yml` is for use in development.
+- `Dockerfile` should be OK for both dev and production.
