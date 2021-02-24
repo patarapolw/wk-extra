@@ -1,11 +1,11 @@
-import { SentenceModel, UserModel } from '@/db/mongo'
+import { ExtraModel, SentenceModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
 import S from 'jsonschema-definer'
 import Mecab from 'mecab-lite'
 import XRegExp from 'xregexp'
 
-const vocabRouter: FastifyPluginAsync = async (f) => {
+const sentenceRouter: FastifyPluginAsync = async (f) => {
   {
     const sQuery = S.shape({
       entry: S.string(),
@@ -31,10 +31,25 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
       async (req): Promise<typeof sResult.type> => {
         const { entry } = req.query
 
-        let dict = await SentenceModel.findOne({
-          ja: entry,
-          source: 'wanikani',
-        }).select({ _id: 0, ja: 1, en: 1 })
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        let dict = await ExtraModel.findOne({
+          $and: [
+            { entry, type: 'sentence' },
+            { $or: [{ userId }, { sharedId: userId }] },
+          ],
+        }).then((r) => (r ? { ja: r.entry[0]!, en: r.english[0]! } : null))
+
+        if (!dict) {
+          dict = await SentenceModel.findOne({
+            ja: entry,
+            source: 'wanikani',
+          }).select({ _id: 0, ja: 1, en: 1 })
+        }
+
         if (!dict) {
           dict = await SentenceModel.aggregate([
             {
@@ -73,7 +88,12 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
     })
 
     const sResult = S.shape({
-      result: S.list(S.string()),
+      result: S.list(
+        S.shape({
+          ja: S.string(),
+          en: S.string(),
+        })
+      ),
     })
 
     const makeJa = new QSplit({
@@ -103,26 +123,45 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
       async (req): Promise<typeof sResult.type> => {
         const { q, page, limit = 5 } = req.query
 
+        const userId = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
         const dCond = makeJa.parse(q)
-        const cond = (source?: 'wanikani') => {
-          const $and = [{ source }]
+        const cond = (c?: { source?: 'wanikani'; type?: 'sentence' }) => {
+          const $and: any[] = []
+
+          if (c) {
+            $and.push(c)
+          }
+
           if (dCond) {
             $and.push(dCond as any)
           }
           return { $and }
         }
 
-        let result = await SentenceModel.aggregate([
-          { $match: cond() },
-          ...(page
-            ? [{ $skip: (page - 1) * limit }]
-            : [
-                { $addFields: { _sort: { $rand: {} } } },
-                { $sort: { _sort: 1 } },
-              ]),
-          { $limit: limit },
-          { $project: { _id: 0, ja: 1 } },
-        ]).then((rs) => rs.map((r) => r.ja))
+        const result = await ExtraModel.find(cond({ type: 'sentence' }))
+          .limit(limit)
+          .select({ _id: 0, entry: 1, english: 1 })
+          .then((rs) => rs.map((r) => ({ ja: r.entry[0]!, en: r.english[0]! })))
+
+        if (result.length < limit) {
+          const rs1 = await SentenceModel.aggregate([
+            { $match: cond() },
+            ...(page
+              ? [{ $skip: (page - 1) * limit }]
+              : [
+                  { $addFields: { _sort: { $rand: {} } } },
+                  { $sort: { _sort: 1 } },
+                ]),
+            { $limit: limit - result.length },
+            { $project: { _id: 0, ja: 1, en: 1 } },
+          ])
+
+          result.push(...rs1)
+        }
 
         return { result }
       }
@@ -184,4 +223,4 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
   }
 }
 
-export default vocabRouter
+export default sentenceRouter

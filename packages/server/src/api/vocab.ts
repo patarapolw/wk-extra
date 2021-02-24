@@ -1,4 +1,4 @@
-import { DictModel, UserModel } from '@/db/mongo'
+import { DictModel, ExtraModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
 import hepburn from 'hepburn'
@@ -12,7 +12,12 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
 
     const sResult = S.shape({
       entry: S.list(S.string()),
-      reading: S.list(S.string()),
+      reading: S.list(
+        S.shape({
+          type: S.string().optional(),
+          kana: S.string(),
+        })
+      ),
       english: S.list(S.string()),
     })
 
@@ -52,7 +57,10 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
 
         return {
           entry: dict.entry,
-          reading: dict.reading.map((r) => r.kana[0]!),
+          reading: dict.reading.map((r) => ({
+            type: r.type,
+            kana: r.kana[0]!,
+          })),
           english: dict.english,
         }
       }
@@ -66,7 +74,18 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
     })
 
     const sResult = S.shape({
-      result: S.list(S.string()),
+      result: S.list(
+        S.shape({
+          entry: S.list(S.string()),
+          reading: S.list(
+            S.shape({
+              type: S.string().optional(),
+              kana: S.string(),
+            })
+          ),
+          english: S.list(S.string()),
+        })
+      ),
     })
 
     const makeJa = new QSplit({
@@ -105,6 +124,11 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
       async (req): Promise<typeof sResult.type> => {
         const { q, limit } = req.query
 
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
         const dCond = makeJa.parse(q)
         const cond = (source?: 'wanikani') => {
           const $and = [{ type: 'vocabulary' as 'vocabulary', source }]
@@ -114,28 +138,64 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           return { $and }
         }
 
-        let docQuery = DictModel.find(cond('wanikani'))
-          .sort('-frequency')
+        let result = await ExtraModel.find({
+          $and: [cond(), { $or: [{ userId }, { sharedId: userId }] }],
+        })
+          .sort('-updatedAt')
+          .limit(limit || 5)
           .select({
             _id: 0,
             entry: 1,
+            reading: 1,
+            english: 1,
           })
-        if (limit) {
-          docQuery = docQuery.limit(limit)
-        }
+          .then((rs) =>
+            rs.map((r) => ({
+              entry: r.entry,
+              reading: r.reading,
+              english: r.english,
+            }))
+          )
 
-        let result = await docQuery.then((rs) => rs.map((r) => r.entry[0]!))
-
-        if (!result.length) {
-          docQuery = DictModel.find(cond()).sort('-frequency').select({
-            _id: 0,
-            entry: 1,
-          })
+        if (result.length < (limit || 5)) {
+          let docQuery = DictModel.find(cond('wanikani'))
+            .sort('-frequency')
+            .select({
+              _id: 0,
+              entry: 1,
+              reading: 1,
+              english: 1,
+            })
           if (limit) {
             docQuery = docQuery.limit(limit)
           }
 
-          result = await docQuery.then((rs) => rs.map((r) => r.entry[0]!))
+          let rs1 = await docQuery
+
+          if (!rs1.length) {
+            docQuery = DictModel.find(cond()).sort('-frequency').select({
+              _id: 0,
+              entry: 1,
+              reading: 1,
+              english: 1,
+            })
+            if (limit) {
+              docQuery = docQuery.limit(limit)
+            }
+
+            rs1 = await docQuery
+          }
+
+          result.push(
+            ...rs1.map((r) => ({
+              entry: r.entry,
+              reading: r.reading.map((r0) => ({
+                type: r0.type,
+                kana: r0.kana[0]!,
+              })),
+              english: r.english,
+            }))
+          )
         }
 
         return { result }

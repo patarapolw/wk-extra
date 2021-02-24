@@ -1,6 +1,7 @@
 import { execSync } from 'child_process'
 import fs from 'fs'
 
+import { UserModel } from '@/db/mongo'
 import { isDevelopment } from '@/shared'
 import axios from 'axios'
 import { FastifyPluginAsync } from 'fastify'
@@ -44,34 +45,64 @@ const apiRouter: FastifyPluginAsync = async (f) => {
       return
     }
 
-    if (!req.headers.authorization) {
+    const [apiKey] = /^Bearer (.+)$/.exec(req.headers.authorization || '') || []
+
+    if (!apiKey) {
       throw { statusCode: 401 }
     }
 
-    const r = await axios.get<{
-      data: {
-        id: string
-        username: string
-        level: number
-        preferences: {
-          default_voice_actor_id: number
-          reviews_autoplay_audio: boolean
+    if (apiKey !== req.session.get('apiKey')) {
+      const r = await axios.get<{
+        data: {
+          id: string
+          username: string
+          level: number
+          preferences: {
+            default_voice_actor_id: number
+            reviews_autoplay_audio: boolean
+          }
+        }
+      }>('https://api.wanikani.com/v2/user', {
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+        validateStatus: () => true,
+      })
+
+      if (!r?.data?.data?.id) {
+        throw { statusCode: r.status < 300 ? 500 : r.status }
+      }
+
+      const u = r.data.data
+      const updates = {
+        username: u.username,
+        level: u.level,
+        voiceId: u.preferences.default_voice_actor_id,
+        autoplayAudio: u.preferences.reviews_autoplay_audio,
+      }
+
+      const user = await UserModel.findById(u.id)
+
+      if (user) {
+        for (const k of user.isManual || []) {
+          delete updates[k]
         }
       }
-    }>('https://api.wanikani.com/v2/user', {
-      headers: {
-        Authorization: req.headers.authorization,
-      },
-      validateStatus: () => true,
-    })
 
-    if (!r?.data?.data?.id) {
-      throw { statusCode: 401 }
+      await UserModel.updateOne(
+        { _id: u.id },
+        {
+          $set: {
+            _id: u.id,
+            ...u,
+          },
+        },
+        { upsert: true }
+      )
+
+      req.session.set('userId', u.id)
+      req.session.set('apiKey', apiKey)
     }
-
-    const user = r.data.data
-
-    req.session.set('userId', user.id)
   })
 
   f.register(utilRouter, { prefix: '/util' })

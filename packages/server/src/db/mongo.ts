@@ -97,14 +97,14 @@ class User {
   @prop() voiceId?: number
   @prop() autoplayAudio?: boolean
 
-  @prop({ default: () => [] }) isManual!: (
+  @prop({ default: () => [] }) isManual?: (
     | 'level'
     | 'username'
     | 'voiceId'
     | 'autoplayAudio'
   )[]
 
-  @prop({ default: 1 }) levelMin!: number
+  @prop({ default: 1 }) levelMin?: number
 }
 
 export const UserModel = getModelForClass(User, {
@@ -115,6 +115,8 @@ export const UserModel = getModelForClass(User, {
 class Extra {
   @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
 
+  @prop({ index: true, required: true }) userId!: string
+
   @prop({
     index: true,
     validate: (it: string[]) =>
@@ -122,7 +124,7 @@ class Extra {
       it.length > 0 &&
       it.every((el) => typeof el === 'string'),
   })
-  userId!: string[]
+  sharedId!: string[]
 
   @prop({
     index: true,
@@ -133,7 +135,10 @@ class Extra {
   })
   entry!: string[]
 
-  @prop({ index: true, default: () => [] }) reading!: string[]
+  @prop({ index: true, default: () => [] }) reading!: {
+    type?: 'kunyomi' | 'onyomi' | 'nanori'
+    kana: string
+  }[]
 
   @prop({
     validate: (it: string[]) =>
@@ -232,6 +237,7 @@ export const QuizModel = getModelForClass(Quiz, {
 @index({ description: 'text' })
 class Library {
   @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
+  @prop({ index: true }) userId?: string
 
   @prop({
     index: true,
@@ -240,7 +246,7 @@ class Library {
       it.length > 0 &&
       it.every((el) => typeof el === 'string'),
   })
-  userId!: string[]
+  sharedId!: string[]
 
   @prop({ required: true }) title!: string
   @prop({
