@@ -2,9 +2,10 @@ import 'log-buffer'
 
 import fs from 'fs'
 
-import { db, dbEdict, dbInit } from '@/dict'
+import createConnectionPool, { sql } from '@databases/pg'
 // @ts-ignore
 import { Iconv } from 'iconv'
+import S from 'jsonschema-definer'
 
 /**
  * KANJI-1;KANJI-2 [KANA-1;KANA-2] /(general information) (see xxxx) gloss/gloss/.../
@@ -16,7 +17,14 @@ import { Iconv } from 'iconv'
  * The EntL is a unique string to help identify the field.
  * The "X", if present, indicates that an audio clip of the entry reading is available from the JapanesePod101.com site.
  */
-async function readEdict() {
+async function readEdict(filename: string): Promise<ReturnType<typeof sql>[]> {
+  const dbEdict = {
+    lots: [] as ReturnType<typeof sql>[],
+    insertOne(p: { entry: string[]; reading: string[]; english: string[] }) {
+      this.lots.push(sql`(${p})`)
+    },
+  }
+
   const parseRow = (r: string) => {
     let [ks, remaining = ''] = r.split(/ (.*)$/g)
     if (!ks) {
@@ -55,15 +63,15 @@ async function readEdict() {
     }
 
     dbEdict.insertOne({
-      alt: kanjis,
+      entry: kanjis,
       reading: readings,
       english: meanings,
     })
   }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let s = ''
-    fs.createReadStream('/Users/patarapolw/Dropbox/database/raw/edict2')
+    fs.createReadStream(filename)
       .pipe(new Iconv('EUC-JP', 'UTF-8'))
       .on('data', (d: Buffer) => {
         s += d.toString()
@@ -76,18 +84,42 @@ async function readEdict() {
       .on('error', reject)
       .on('end', async () => {
         parseRow(s)
-        resolve()
+        resolve(dbEdict.lots)
       })
   })
 }
 
 async function main() {
-  await dbInit()
-  await readEdict()
+  const db = createConnectionPool(process.env.DATABASE_URL)
 
-  db.save(() => {
-    db.close()
+  await db.query(sql`
+  ALTER TABLE dict.edict ADD CONSTRAINT "c_data" CHECK (validate_json_schema('${sql.__dangerous__rawValue(
+    JSON.stringify(
+      S.shape({
+        entry: S.list(S.string()).minItems(1),
+        reading: S.list(S.string()),
+        english: S.list(S.string()).minItems(1),
+      }).valueOf()
+    )
+  )}', "data"))
+  `)
+
+  await db.tx(async (db) => {
+    const batchSize = 5000
+
+    const lots = await readEdict('cache/edict2')
+    console.dir(lots.shift(), { depth: null })
+
+    for (let i = 0; i < lots.length; i += batchSize) {
+      console.log('edict2', lots[i])
+      await db.query(sql`
+        INSERT INTO dict.edict ("data")
+        VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+      `)
+    }
   })
+
+  await db.dispose()
 }
 
 if (require.main === module) {

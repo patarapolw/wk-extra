@@ -1,0 +1,9 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!/scripts/
+!/src/
+!/package.json
+!/tsconfig.json
+!/yarn.lock

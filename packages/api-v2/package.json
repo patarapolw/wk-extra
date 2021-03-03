@@ -5,6 +5,8 @@
     "ts": "ts-node -r tsconfig-paths/register"
   },
   "dependencies": {
+    "@databases/pg": "^4.0.0",
+    "@databases/sqlite": "^3.0.0",
     "@types/better-sqlite3": "^5.4.1",
     "@types/js-yaml": "^4.0.0",
     "@types/lokijs": "^1.5.3",
@@ -14,6 +16,7 @@
     "axios": "^0.21.1",
     "axios-rate-limit": "^1.3.0",
     "better-sqlite3": "^7.1.2",
+    "csv-parser": "^3.0.0",
     "iconv": "^3.0.0",
     "js-yaml": "^4.0.0",
     "jsonschema-definer": "^1.3.2",

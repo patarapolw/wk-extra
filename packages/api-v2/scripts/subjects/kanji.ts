@@ -1,9 +1,9 @@
 import { ICollection, IResource, wkApi } from '@/wk/wanikani'
-import sqlite3 from 'better-sqlite3'
+import createConnectionPool, { sql } from '@databases/pg'
 import S from 'jsonschema-definer'
 
 async function main() {
-  const db = sqlite3('../../data/wanikani.db')
+  const db = createConnectionPool(process.env.DATABASE_URL)
 
   const sKanji = S.shape({
     level: S.integer(),
@@ -30,11 +30,6 @@ async function main() {
     reading_hint: S.anyOf(S.string(), S.null()),
   }).additionalProperties(true)
 
-  const stmt = db.prepare(/* sql */ `
-  INSERT INTO "kanji" ("id", "data_updated_at", "url", "data")
-  VALUES (@id, @data_updated_at, @url, @data)
-  `)
-
   let nextUrl = '/subjects?types=kanji'
 
   while (true) {
@@ -49,18 +44,31 @@ async function main() {
       >
     >(nextUrl)
 
-    db.transaction(() => {
+    await db.tx(async (db) => {
+      const lots: ReturnType<typeof sql>[] = []
+
       for (const d of r.data.data) {
         if (d.object !== 'kanji') {
           throw new Error('not Kanji')
         }
 
-        stmt.run({
-          ...d,
-          data: JSON.stringify(sKanji.ensure(d.data)),
-        })
+        sKanji.ensure(d.data)
+
+        lots.push(
+          sql`(${d.id}, ${new Date(d.data_updated_at)}, ${d.object}, ${
+            d.url
+          }, ${d.data})`
+        )
       }
-    })()
+
+      const batchSize = 100
+      for (let i = 0; i < lots.length; i += batchSize) {
+        await db.query(sql`
+          INSERT INTO wanikani.subjects ("id", "data_updated_at", "object", "url", "data")
+          VALUES ${sql.join(lots.slice(i, i + batchSize), ',')}
+        `)
+      }
+    })
 
     console.log(r.data.url)
 
@@ -69,6 +77,8 @@ async function main() {
       break
     }
   }
+
+  await db.dispose()
 }
 
 if (require.main === module) {

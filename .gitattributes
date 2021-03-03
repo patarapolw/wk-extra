@@ -1,4 +1,1 @@
-*.db filter=git-crypt diff=git-crypt
-*.loki filter=git-crypt diff=git-crypt
-*.mp3 filter=git-crypt diff=git-crypt
-*.ogg filter=git-crypt diff=git-crypt
+*.db filter=lfs diff=lfs merge=lfs -text
