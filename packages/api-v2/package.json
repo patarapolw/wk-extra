@@ -23,6 +23,7 @@
     "log-buffer": "^0.0.3",
     "lokijs": "^1.5.11",
     "nanoid": "^3.1.20",
+    "sanitize-filename": "^1.6.3",
     "ts-node": "^9.1.1",
     "tsconfig-paths": "^3.9.0",
     "xregexp": "^4.4.1"
