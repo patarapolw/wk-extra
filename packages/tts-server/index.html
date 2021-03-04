@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: TTS server</title>
+</head>
+<body>
+    <audio controls>
+        <source src="https://u74842.deta.dev/tts.mp3?q=日本へ" type="audio/mp3">
+    </audio>
+
+    <form>
+        <input type="search" name="q" id="q">
+    </form>
+
+    <script>
+        (function () {
+            const u = new URL(location.href)
+            const q = u.searchParams.get("q")
+            if (q) {
+                u.pathname = "/tts.mp3"
+                document.querySelector("source").src = u.href
+            }
+        })()
+    </script>
+</body>
+</html>
