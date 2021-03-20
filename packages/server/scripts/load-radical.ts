@@ -2,11 +2,10 @@ import { RadicalModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
-import XRegExp from 'xregexp'
 
 async function main() {
   const wk = sqlite3('../../data/radical.db')
-  const reHan = XRegExp('\\p{Han}', 'g')
+  const reHan = /\p{sc=Han}/gu
   const getHan = (s: string) => {
     reHan.lastIndex = 0
     const out: string[] = []

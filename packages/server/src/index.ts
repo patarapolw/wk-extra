@@ -8,11 +8,15 @@ import fastifyStatic from 'fastify-static'
 import pino from 'pino'
 
 import apiRouter from './api'
+import { initKuromoji, initKuroshiro } from './db/kuro'
 import { mongoConnect } from './db/mongo'
 import { isDevelopment } from './shared'
 
 async function main() {
   await mongoConnect()
+
+  await initKuromoji()
+  await initKuroshiro()
 
   const logThrough = new stream.PassThrough()
   const logger = pino(
@@ -41,7 +45,10 @@ async function main() {
   const app = fastify({
     logger,
   })
-  app.register(helmet)
+
+  if (!isDevelopment) {
+    app.register(helmet)
+  }
 
   app.addHook('preHandler', async (req) => {
     const { body, log } = req
@@ -59,7 +66,9 @@ async function main() {
     prefix: '/api',
   })
 
-  await app.listen(8080, '0.0.0.0')
+  const port = parseInt(process.env.PORT || '') || 18797
+
+  await app.listen(port, isDevelopment ? 'localhost' : '0.0.0.0')
 }
 
 if (require.main === module) {

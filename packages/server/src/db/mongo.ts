@@ -6,7 +6,7 @@ import {
   prop,
   setGlobalOptions,
 } from '@typegoose/typegoose'
-import { Ulid } from 'id128'
+import { nanoid } from 'nanoid'
 import { addDate } from 'native-duration'
 
 import { srsMap } from './srs'
@@ -53,7 +53,8 @@ class Dict {
 
   @prop({ default: () => [] }) reading!: {
     type?: 'kunyomi' | 'onyomi' | 'nanori'
-    kana: string[]
+    kana: string
+    hidden?: boolean
   }[]
 
   @prop({ default: () => [] }) english!: string[]
@@ -113,7 +114,7 @@ export const UserModel = getModelForClass(User, {
 
 @index({ english: 'text' })
 class Extra {
-  @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
+  @prop({ default: () => nanoid() }) _id!: string
 
   @prop({ index: true, required: true }) userId!: string
 
@@ -138,6 +139,7 @@ class Extra {
   @prop({ index: true, default: () => [] }) reading!: {
     type?: 'kunyomi' | 'onyomi' | 'nanori'
     kana: string
+    hidden?: boolean
   }[]
 
   @prop({
@@ -160,7 +162,7 @@ export const ExtraModel = getModelForClass(Extra, {
 
 @index({ entry: 1, type: 1, direction: 1 }, { unique: true })
 class Quiz {
-  @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
+  @prop({ default: () => nanoid() }) _id!: string
 
   @prop({ required: true, index: true }) userId!: string
 
@@ -236,7 +238,7 @@ export const QuizModel = getModelForClass(Quiz, {
 
 @index({ description: 'text' })
 class Library {
-  @prop({ default: () => Ulid.generate().toCanonical() }) _id!: string
+  @prop({ default: () => nanoid() }) _id!: string
   @prop({ index: true }) userId?: string
 
   @prop({

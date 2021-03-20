@@ -2,10 +2,10 @@ import { DictModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
-import hepburn from 'hepburn'
+import { katakanaToHiragana } from 'jskana'
 
 async function main() {
-  const wk = sqlite3(`${__dirname}/wanikani.db`)
+  const wk = sqlite3(`../api-v2/cache/wanikani.db`)
 
   await mongoConnect()
 
@@ -31,8 +31,6 @@ async function main() {
     )
     .then((r) => r.data)
 
-  console.log(fMap)
-
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
@@ -40,14 +38,27 @@ async function main() {
       items.slice(i, i + chunkSize).map((it) => {
         return {
           entry: [it.characters],
-          reading: JSON.parse(it.readings).map((r: any) => {
-            return {
-              type: r.type,
-              kana: [
-                r.reading,
-                hepburn.toHiragana(hepburn.fromKana(r.reading)),
-              ].filter((a, i, arr) => arr.indexOf(a) === i),
+          reading: JSON.parse(it.readings).flatMap((r: any) => {
+            const out: {
+              type: string
+              kana: string
+              hidden?: boolean
+            }[] = [
+              {
+                type: r.type,
+                kana: r.reading,
+              },
+            ]
+
+            if (/\p{sc=Katakana}/.test(r.reading)) {
+              out.push({
+                type: r.type,
+                kana: katakanaToHiragana(r.reading),
+                hidden: true,
+              })
             }
+
+            return out
           }),
           english: JSON.parse(it.meanings).map((r: any) => r.meaning),
           type: it.type,

@@ -2,7 +2,7 @@ import { DictModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
-import hepburn from 'hepburn'
+import { katakanaToHiragana } from 'jskana'
 
 async function main() {
   const wk = sqlite3('../../data/kanjidic.db')
@@ -30,8 +30,6 @@ async function main() {
     )
     .then((r) => r.data)
 
-  console.log(fMap)
-
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
@@ -40,27 +38,61 @@ async function main() {
         return {
           entry: it.kanji,
           reading: [
-            ...JSON.parse(it.kunyomi).map((r: string) => {
-              const rs = [r, r.replace('.', '')]
-              rs.push(...rs.map((r) => hepburn.toHiragana(hepburn.fromKana(r))))
+            ...JSON.parse(it.kunyomi).flatMap((r: string) => {
+              const out: {
+                type: 'kunyomi'
+                kana: string
+                hidden?: boolean
+              }[] = [
+                {
+                  type: 'kunyomi',
+                  kana: r,
+                },
+              ]
 
-              return {
-                type: 'kunyomi',
-                kana: rs.filter((a, i, arr) => arr.indexOf(a) === i),
+              if (r.includes('.')) {
+                out.push({
+                  type: 'kunyomi',
+                  kana: r.replace('.', ''),
+                  hidden: true,
+                })
               }
+
+              return out
             }),
-            ...JSON.parse(it.onyomi).map((r: string) => ({
-              type: 'onyomi',
-              kana: [r, hepburn.toHiragana(hepburn.fromKana(r))].filter(
-                (a, i, arr) => arr.indexOf(a) === i
-              ),
-            })),
-            ...JSON.parse(it.nanori).map((r: string) => ({
-              type: 'nanori',
-              kana: [r, hepburn.toHiragana(hepburn.fromKana(r))].filter(
-                (a, i, arr) => arr.indexOf(a) === i
-              ),
-            })),
+            ...JSON.parse(it.onyomi).flatMap((r: string) => [
+              {
+                type: 'onyomi',
+                kana: r,
+              },
+              {
+                type: 'onyomi',
+                kana: katakanaToHiragana(r),
+                hidden: true,
+              },
+            ]),
+            ...JSON.parse(it.nanori).flatMap((r: string) => {
+              const out: {
+                type: 'nanori'
+                kana: string
+                hidden?: boolean
+              }[] = [
+                {
+                  type: 'nanori',
+                  kana: r,
+                },
+              ]
+
+              if (/\p{sc=Katakana}/u.test(r)) {
+                out.push({
+                  type: 'nanori',
+                  kana: katakanaToHiragana(r),
+                  hidden: true,
+                })
+              }
+
+              return out
+            }),
           ],
           english: JSON.parse(it.english).map((r: string) => r),
           type: 'kanji',

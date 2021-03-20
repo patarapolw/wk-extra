@@ -1,7 +1,7 @@
 import { ExtraModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
-import hepburn from 'hepburn'
+import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
 
 const extraRouter: FastifyPluginAsync = async (f) => {
@@ -32,7 +32,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
         return {
           $or: [
             { entry: v },
-            { 'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)) },
+            { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
             { $text: { $search: v } },
           ],
         }
@@ -43,7 +43,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'onyomi',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -51,7 +51,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'kunyomi',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -59,7 +59,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'nanori',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -104,6 +104,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
             reading: 1,
             english: 1,
           })
+          .catch(() => [])
 
         return {
           result: rs,

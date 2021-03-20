@@ -1,9 +1,8 @@
+import { kuromoji } from '@/db/kuro'
 import { ExtraModel, SentenceModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
 import S from 'jsonschema-definer'
-import Mecab from 'mecab-lite'
-import XRegExp from 'xregexp'
 
 const sentenceRouter: FastifyPluginAsync = async (f) => {
   {
@@ -75,10 +74,12 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
   }
 
   {
-    const mecab = new Mecab()
-    const reJa = XRegExp('[\\p{Han}\\p{Hiragana}\\p{Hiragana}]')
+    const reJa = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Hiragana}]/u
     const getJa = (s: string) => {
-      return mecab.wakatigakiSync(s).filter((v) => reJa.test(v))
+      return kuromoji
+        .tokenize(s)
+        .map((s) => s.basic_form || s.surface_form)
+        .filter((v) => reJa.test(v))
     }
 
     const sQuery = S.shape({
@@ -139,13 +140,14 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
           if (dCond) {
             $and.push(dCond as any)
           }
-          return { $and }
+          return $and.length ? { $and } : {}
         }
 
         const result = await ExtraModel.find(cond({ type: 'sentence' }))
           .limit(limit)
           .select({ _id: 0, entry: 1, english: 1 })
           .then((rs) => rs.map((r) => ({ ja: r.entry[0]!, en: r.english[0]! })))
+          .catch(() => [] as any[])
 
         if (result.length < limit) {
           const rs1 = await SentenceModel.aggregate([
@@ -193,8 +195,8 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
           {
             $match: {
               $and: [
-                { level: { $gte: u.level } },
-                { level: { $lte: u.levelMin } },
+                { level: { $lte: u.level } },
+                { level: { $gte: u.levelMin } },
               ],
             },
           },
@@ -202,8 +204,8 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
           {
             $project: {
               _id: 0,
-              result: 'ja',
-              english: 'en',
+              result: '$ja',
+              english: '$en',
               level: 1,
             },
           },

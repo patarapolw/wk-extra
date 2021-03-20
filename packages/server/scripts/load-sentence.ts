@@ -1,14 +1,13 @@
+import { initKuromoji, kuromoji } from '@/db/kuro'
 import { SentenceModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import sqlite3 from 'better-sqlite3'
-import Mecab from 'mecab-lite'
-import XRegExp from 'xregexp'
 
 async function main() {
-  const wk = sqlite3(`${__dirname}/wanikani.db`)
-  const mecab = new Mecab()
-  const re = XRegExp('[\\p{Han}\\p{Katakana}\\p{Hiragana}]')
+  const wk = sqlite3(`../api-v2/cache/wanikani.db`)
+  const re = /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u
 
+  await initKuromoji()
   await mongoConnect()
 
   const items = wk
@@ -43,7 +42,10 @@ async function main() {
     await SentenceModel.insertMany(
       items.slice(i, i + chunkSize).map((it) => ({
         ja: it.ja,
-        word: mecab.wakatigakiSync(it.ja).filter((s) => re.test(s)),
+        word: kuromoji
+          .tokenize(it.ja)
+          .map((t) => t.basic_form || t.surface_form)
+          .filter((s) => re.test(s)),
         en: it.en,
         vocab: it.vocab,
         level: it.level,

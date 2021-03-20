@@ -1,7 +1,7 @@
 import { DictModel, ExtraModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
-import hepburn from 'hepburn'
+import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
 
 const vocabRouter: FastifyPluginAsync = async (f) => {
@@ -59,7 +59,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           entry: dict.entry,
           reading: dict.reading.map((r) => ({
             type: r.type,
-            kana: r.kana[0]!,
+            kana: r.kana,
           })),
           english: dict.english,
         }
@@ -93,7 +93,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
         return {
           $or: [
             { entry: v },
-            { 'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)) },
+            { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
             { $text: { $search: v } },
           ],
         }
@@ -102,7 +102,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
         entry: { ':': (v) => ({ entry: v }) },
         reading: {
           ':': (v) => ({
-            'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)),
+            'reading.kana': katakanaToHiragana(romajiToHiragana(v)),
           }),
         },
         english: { ':': (v) => ({ $text: { $search: v } }) },
@@ -156,6 +156,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
               english: r.english,
             }))
           )
+          .catch(() => [] as any[])
 
         if (result.length < (limit || 5)) {
           let docQuery = DictModel.find(cond('wanikani'))
@@ -191,7 +192,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
               entry: r.entry,
               reading: r.reading.map((r0) => ({
                 type: r0.type,
-                kana: r0.kana[0]!,
+                kana: r0.kana,
               })),
               english: r.english,
             }))
@@ -228,8 +229,8 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           {
             $match: {
               $and: [
-                { level: { $gte: u.level } },
-                { level: { $lte: u.levelMin } },
+                { level: { $lte: u.level } },
+                { level: { $gte: u.levelMin } },
                 { type: 'vocabulary' },
               ],
             },
@@ -238,7 +239,7 @@ const vocabRouter: FastifyPluginAsync = async (f) => {
           {
             $project: {
               _id: 0,
-              result: { $first: 'entry' },
+              result: { $first: '$entry' },
               english: 1,
               level: 1,
             },

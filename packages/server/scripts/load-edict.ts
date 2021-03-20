@@ -2,7 +2,7 @@ import { DictModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
-import hepburn from 'hepburn'
+import { katakanaToHiragana } from 'jskana'
 
 async function main() {
   const wk = sqlite3('../../data/edict.db')
@@ -48,12 +48,24 @@ async function main() {
 
         return {
           entry: it.entry,
-          reading: it.reading.map((r: string) => {
-            return {
-              kana: [r, hepburn.toHiragana(hepburn.fromKana(r))].filter(
-                (a, i, arr) => arr.indexOf(a) === i
-              ),
+          reading: it.reading.flatMap((r: string) => {
+            const out: {
+              kana: string
+              hidden?: boolean
+            }[] = [
+              {
+                kana: r,
+              },
+            ]
+
+            if (/\p{sc=Katakana}/u.test(r)) {
+              out.push({
+                kana: katakanaToHiragana(r),
+                hidden: true,
+              })
             }
+
+            return out
           }),
           english: JSON.parse(it.english).map((r: string) => r),
           type: 'vocabulary',

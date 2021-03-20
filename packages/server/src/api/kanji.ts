@@ -1,9 +1,8 @@
 import { DictModel, ExtraModel, RadicalModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
-import hepburn from 'hepburn'
+import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
-import XRegExp from 'xregexp'
 
 const kanjiRouter: FastifyPluginAsync = async (f) => {
   {
@@ -63,7 +62,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
               ? {
                   reading: r.reading.map((r) => ({
                     type: r.type,
-                    kana: r.kana[0]!,
+                    kana: r.kana,
                   })),
                   english: r.english,
                 }
@@ -80,7 +79,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
               ? {
                   reading: r.reading.map((r) => ({
                     type: r.type,
-                    kana: r.kana[0]!,
+                    kana: r.kana,
                   })),
                   english: r.english,
                 }
@@ -115,8 +114,8 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
 
     const makeRad = new QSplit({
       default: (v) => {
-        if (XRegExp('^\\p{Han}{2,}$').test(v)) {
-          const re = XRegExp('\\p{Han}', 'g')
+        if (/^\p{sc=Han}{2,}$/u.test(v)) {
+          const re = /\p{sc=Han}/gu
           let m = re.exec(v)
           const out: string[] = []
           while (m) {
@@ -129,7 +128,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
               return { entry: v }
             }),
           }
-        } else if (XRegExp('^\\p{Han}$').test(v)) {
+        } else if (/^\p{sc=Han}$/u.test(v)) {
           return { $or: [{ entry: v }, { sub: v }, { sup: v }, { var: v }] }
         }
 
@@ -146,13 +145,13 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
 
     const makeJa = new QSplit({
       default: (v) => {
-        if (XRegExp('^\\p{Han}+$').test(v)) {
+        if (/^\p{sc=Han}$/u.test(v)) {
           return {}
         }
 
         return {
           $or: [
-            { 'reading.kana': hepburn.toHiragana(hepburn.fromKana(v)) },
+            { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
             { $text: { $search: v } },
           ],
         }
@@ -162,7 +161,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'onyomi',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -170,7 +169,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'kunyomi',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -178,7 +177,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           ':': (v) => ({
             reading: {
               type: 'nanori',
-              kana: hepburn.toHiragana(hepburn.fromKana(v)),
+              kana: katakanaToHiragana(romajiToHiragana(v)),
             },
           }),
         },
@@ -228,13 +227,14 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
         }
 
         const rs0 = await ExtraModel.find({
-          $and: [cond(), { $or: [{ userId }, { sharedId: userId }] }],
+          $and: [cond(), { $or: [{ userId }, { userId: { $exists: false } }] }],
         })
           .sort('-updatedAt')
           .select({
             _id: 0,
             entry: 1,
           })
+          .catch(() => [] as any[])
 
         let result = rs0.map((r) => {
           return r.entry[0]!
@@ -321,8 +321,8 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           {
             $match: {
               $and: [
-                { level: { $gte: u.level } },
-                { level: { $lte: u.levelMin } },
+                { level: { $lte: u.level } },
+                { level: { $gte: u.levelMin } },
                 { type: 'kanji' },
               ],
             },
@@ -331,7 +331,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
           {
             $project: {
               _id: 0,
-              result: { $first: 'entry' },
+              result: { $first: '$entry' },
               english: 1,
               level: 1,
             },

@@ -1,18 +1,20 @@
+import { kuromoji } from '@/db/kuro'
 import { FastifyPluginAsync } from 'fastify'
 import S from 'jsonschema-definer'
-import Mecab from 'mecab-lite'
 import Text2Speech from 'node-gtts'
 
 const utilRouter: FastifyPluginAsync = async (f) => {
   {
-    const mecab = new Mecab()
-
     const sQuery = S.shape({
       q: S.string(),
     })
 
     const sResponse = S.shape({
-      result: S.list(S.string()),
+      result: S.list(
+        S.shape({
+          surface_form: S.string(),
+        }).additionalProperties(true)
+      ),
     })
 
     f.get<{
@@ -29,7 +31,7 @@ const utilRouter: FastifyPluginAsync = async (f) => {
       },
       async (req): Promise<typeof sResponse.type> => {
         return {
-          result: mecab.wakatigakiSync(req.query.q),
+          result: kuromoji.tokenize(req.query.q),
         }
       }
     )

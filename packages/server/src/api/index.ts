@@ -7,8 +7,13 @@ import axios from 'axios'
 import { FastifyPluginAsync } from 'fastify'
 import csrf from 'fastify-csrf'
 import fSession from 'fastify-secure-session'
+import fSwagger from 'fastify-swagger'
 
+import extraRouter from './extra'
+import kanjiRouter from './kanji'
+import sentenceRouter from './sentence'
 import utilRouter from './util'
+import vocabRouter from './vocab'
 
 const apiRouter: FastifyPluginAsync = async (f) => {
   if (!fs.existsSync('session.key')) {
@@ -21,6 +26,26 @@ const apiRouter: FastifyPluginAsync = async (f) => {
 
   f.register(csrf, {
     sessionPlugin: 'fastify-secure-session',
+  })
+
+  f.register(fSwagger, {
+    openapi: {
+      security: [
+        {
+          BearerAuth: [],
+        },
+      ],
+      components: {
+        securitySchemes: {
+          BearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+          },
+        },
+      },
+    },
+    routePrefix: '/doc',
+    exposeRoute: process.env['NODE_ENV'] === 'development',
   })
 
   if (!isDevelopment) {
@@ -36,7 +61,7 @@ const apiRouter: FastifyPluginAsync = async (f) => {
 
   f.get('/settings', async (_, reply) => {
     return {
-      token: reply.generateCsrf(),
+      csrf: await reply.generateCsrf(),
     }
   })
 
@@ -105,7 +130,11 @@ const apiRouter: FastifyPluginAsync = async (f) => {
     }
   })
 
+  f.register(extraRouter, { prefix: '/extra' })
+  f.register(kanjiRouter, { prefix: '/kanji' })
+  f.register(sentenceRouter, { prefix: '/sentence' })
   f.register(utilRouter, { prefix: '/util' })
+  f.register(vocabRouter, { prefix: '/vocab' })
 }
 
 export default apiRouter
