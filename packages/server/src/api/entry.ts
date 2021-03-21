@@ -5,7 +5,7 @@ import { FastifyPluginAsync } from 'fastify'
 import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
 
-const browseRouter: FastifyPluginAsync = async (f) => {
+const entryRouter: FastifyPluginAsync = async (f) => {
   {
     const sQuery = S.shape({
       entry: S.string(),
@@ -445,4 +445,4 @@ const browseRouter: FastifyPluginAsync = async (f) => {
   }
 }
 
-export default browseRouter
+export default entryRouter

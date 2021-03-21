@@ -173,30 +173,6 @@ export interface OperationMethods {
     config?: AxiosRequestConfig  
   ): OperationResponse<any>
   /**
-   * browseGetOne
-   */
-  'browseGetOne'(
-    parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
-  /**
-   * browseQuery
-   */
-  'browseQuery'(
-    parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseQuery.Responses.$200>
-  /**
-   * browseRandom
-   */
-  'browseRandom'(
-    parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseRandom.Responses.$200>
-  /**
    * characterRadical
    */
   'characterRadical'(
@@ -220,6 +196,30 @@ export interface OperationMethods {
     data?: any,
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.CharacterSentence.Responses.$200>
+  /**
+   * browseGetOne
+   */
+  'browseGetOne'(
+    parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
+  /**
+   * browseQuery
+   */
+  'browseQuery'(
+    parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.BrowseQuery.Responses.$200>
+  /**
+   * browseRandom
+   */
+  'browseRandom'(
+    parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.BrowseRandom.Responses.$200>
   /**
    * utilTokenize
    */
@@ -265,36 +265,6 @@ export interface PathsDictionary {
       config?: AxiosRequestConfig  
     ): OperationResponse<any>
   }
-  ['/api/browse/']: {
-    /**
-     * browseGetOne
-     */
-    'get'(
-      parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
-  }
-  ['/api/browse/q']: {
-    /**
-     * browseQuery
-     */
-    'get'(
-      parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseQuery.Responses.$200>
-  }
-  ['/api/browse/random']: {
-    /**
-     * browseRandom
-     */
-    'get'(
-      parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseRandom.Responses.$200>
-  }
   ['/api/character/radical']: {
     /**
      * characterRadical
@@ -324,6 +294,36 @@ export interface PathsDictionary {
       data?: any,
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.CharacterSentence.Responses.$200>
+  }
+  ['/api/entry/']: {
+    /**
+     * browseGetOne
+     */
+    'get'(
+      parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
+  }
+  ['/api/entry/q']: {
+    /**
+     * browseQuery
+     */
+    'get'(
+      parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.BrowseQuery.Responses.$200>
+  }
+  ['/api/entry/random']: {
+    /**
+     * browseRandom
+     */
+    'get'(
+      parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.BrowseRandom.Responses.$200>
   }
   ['/api/util/tokenize']: {
     /**
