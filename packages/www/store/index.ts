@@ -1,4 +1,4 @@
-import { api } from '@/assets/api'
+import { api, initAPI } from '@/assets/api'
 import { actionTree, getAccessorType, mutationTree } from 'typed-vuex'
 
 interface ISettings {
@@ -26,6 +26,9 @@ export const mutations = mutationTree(state, {
 export const actions = actionTree(
   { state, mutations },
   {
+    async nuxtServerInit() {
+      await initAPI()
+    },
     async updateSettings({ commit }) {
       const r = await api
         .get('/api/user/', {

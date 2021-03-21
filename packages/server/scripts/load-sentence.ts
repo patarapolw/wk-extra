@@ -1,5 +1,5 @@
 import { initKuromoji, kuromoji } from '@/db/kuro'
-import { SentenceModel, mongoConnect } from '@/db/mongo'
+import { EntryModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import sqlite3 from 'better-sqlite3'
 
@@ -39,18 +39,26 @@ async function main() {
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
-    await SentenceModel.insertMany(
-      items.slice(i, i + chunkSize).map((it) => ({
-        ja: it.ja,
-        word: kuromoji
-          .tokenize(it.ja)
-          .map((t) => t.basic_form || t.surface_form)
-          .filter((s) => re.test(s)),
-        en: it.en,
-        vocab: it.vocab,
-        level: it.level,
-        source: 'wanikani',
-      }))
+    await EntryModel.insertMany(
+      items.slice(i, i + chunkSize).map((it) => {
+        const segments = [
+          it.vocab,
+          ...kuromoji
+            .tokenize(it.ja)
+            .map((t) => t.basic_form || t.surface_form)
+            .filter((s) => re.test(s)),
+        ].filter((a, i, r) => r.indexOf(a) === i)
+
+        return {
+          entry: [it.ja],
+          segments,
+          english: [it.en],
+          vocab: it.vocab,
+          level: it.level,
+          type: 'sentence',
+          source: 'wanikani',
+        }
+      })
     )
   }
 

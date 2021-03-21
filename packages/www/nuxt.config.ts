@@ -129,6 +129,15 @@ export default (): NuxtConfig => {
     },
 
     // Build Configuration: https://go.nuxtjs.dev/config-build
-    build: {},
+    build: {
+      extend(config) {
+        config.node = config.node || {}
+        config.node.fs = 'empty'
+      },
+    },
+
+    server: {
+      port: 23949,
+    },
   }
 }

@@ -1,10 +1,8 @@
-import { DictModel, ExtraModel, RadicalModel, UserModel } from '@/db/mongo'
-import { QSplit } from '@/db/token'
+import { EntryModel, RadicalModel } from '@/db/mongo'
 import { FastifyPluginAsync } from 'fastify'
-import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
 
-const kanjiRouter: FastifyPluginAsync = async (f) => {
+const characterRouter: FastifyPluginAsync = async (f) => {
   {
     const sQuery = S.shape({
       entry: S.string(),
@@ -14,22 +12,15 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
       sub: S.list(S.string()),
       sup: S.list(S.string()),
       var: S.list(S.string()),
-      reading: S.list(
-        S.shape({
-          type: S.string().optional(),
-          kana: S.string(),
-        })
-      ),
-      english: S.list(S.string()),
     })
 
     f.get<{
       Querystring: typeof sQuery.type
     }>(
-      '/',
+      '/radical',
       {
         schema: {
-          operationId: 'characterGetOne',
+          operationId: 'characterRadical',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -46,58 +37,10 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
 
         const rad = await RadicalModel.findOne({ entry })
 
-        let dict = await ExtraModel.findOne({
-          $and: [
-            { entry, type: 'kanji' },
-            { $or: [{ userId }, { sharedId: userId }] },
-          ],
-        }).then((r) => (r ? { reading: r.reading, english: r.english } : null))
-
-        if (!dict) {
-          dict = await DictModel.findOne({
-            entry,
-            type: 'kanji',
-            source: 'wanikani',
-          }).then((r) =>
-            r
-              ? {
-                  reading: r.reading.map((r) => ({
-                    type: r.type,
-                    kana: r.kana,
-                  })),
-                  english: r.english,
-                }
-              : null
-          )
-        }
-
-        if (!dict) {
-          dict = await DictModel.findOne({
-            entry,
-            type: 'kanji',
-          }).then((r) =>
-            r
-              ? {
-                  reading: r.reading.map((r) => ({
-                    type: r.type,
-                    kana: r.kana,
-                  })),
-                  english: r.english,
-                }
-              : null
-          )
-        }
-
-        if (!rad && !dict) {
-          throw { statusCode: 404 }
-        }
-
         return {
           sub: rad?.sub || [],
           sup: rad?.sup || [],
           var: rad?.var || [],
-          reading: dict ? dict.reading : [],
-          english: dict?.english || [],
         }
       }
     )
@@ -105,97 +48,22 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
 
   {
     const sQuery = S.shape({
-      q: S.string(),
-      limit: S.integer().optional(),
+      entry: S.string(),
     })
 
     const sResult = S.shape({
-      result: S.list(S.string()),
-    })
-
-    const makeRad = new QSplit({
-      default: (v) => {
-        if (/^\p{sc=Han}{2,}$/u.test(v)) {
-          const re = /\p{sc=Han}/gu
-          let m = re.exec(v)
-          const out: string[] = []
-          while (m) {
-            out.push(m[0]!)
-            m = re.exec(v)
-          }
-
-          return {
-            $or: out.map((v) => {
-              return { entry: v }
-            }),
-          }
-        } else if (/^\p{sc=Han}$/u.test(v)) {
-          return { $or: [{ entry: v }, { sub: v }, { sup: v }, { var: v }] }
-        }
-
-        return {}
-      },
-      fields: {
-        entry: { ':': (v) => ({ entry: v }) },
-        kanji: { ':': (v) => ({ entry: v }) },
-        sub: { ':': (v) => ({ sub: v }) },
-        sup: { ':': (v) => ({ sup: v }) },
-        var: { ':': (v) => ({ var: v }) },
-      },
-    })
-
-    const makeJa = new QSplit({
-      default: (v) => {
-        if (/^\p{sc=Han}$/u.test(v)) {
-          return {}
-        }
-
-        return {
-          $or: [
-            { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
-            { $text: { $search: v } },
-          ],
-        }
-      },
-      fields: {
-        onyomi: {
-          ':': (v) => ({
-            reading: {
-              type: 'onyomi',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        kunyomi: {
-          ':': (v) => ({
-            reading: {
-              type: 'kunyomi',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        nanori: {
-          ':': (v) => ({
-            reading: {
-              type: 'nanori',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        reading: {
-          ':': (v) => ({ 'reading.kana': v }),
-        },
-        english: { ':': (v) => ({ $text: { $search: v } }) },
-      },
+      sub: S.list(S.string()),
+      sup: S.list(S.string()),
+      var: S.list(S.string()),
     })
 
     f.get<{
       Querystring: typeof sQuery.type
     }>(
-      '/q',
+      '/radical',
       {
         schema: {
-          operationId: 'characterQuery',
+          operationId: 'characterRadical',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -203,160 +71,141 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req): Promise<typeof sResult.type> => {
-        const { q, limit } = req.query
+        const { entry } = req.query
 
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
         }
 
-        if (!q.trim()) {
-          return { result: [] }
+        const rad = await RadicalModel.findOne({ entry })
+
+        return {
+          sub: rad?.sub || [],
+          sup: rad?.sup || [],
+          var: rad?.var || [],
         }
-
-        const dCond = makeJa.parse(q)
-        const cond = (c?: { source: 'wanikani' }) => {
-          const $and: any[] = [{ type: 'kanji' }]
-
-          if (c) {
-            $and.push(c)
-          }
-
-          if (dCond) {
-            $and.push(dCond as any)
-          }
-          return $and.length > 1 ? { $and } : { [Math.random()]: 1 }
-        }
-
-        const rs0 = await ExtraModel.find({
-          $and: [cond(), { $or: [{ userId }, { userId: { $exists: false } }] }],
-        })
-          .sort('-updatedAt')
-          .select({
-            _id: 0,
-            entry: 1,
-          })
-          .catch(() => [] as any[])
-
-        let result = rs0.map((r) => {
-          return r.entry[0]!
-        })
-
-        if (rs0.length < (limit || 5)) {
-          let rs = await DictModel.find(cond({ source: 'wanikani' }))
-            .sort('-frequency')
-            .select({
-              _id: 0,
-              entry: 1,
-              frequency: 1,
-            })
-
-          if (!rs.length) {
-            rs = await DictModel.find(cond()).sort('-frequency').select({
-              _id: 0,
-              entry: 1,
-              frequency: 1,
-            })
-          }
-
-          const fMap = new Map<string, number>()
-          result.push(
-            ...rs.map((r) => {
-              if (r.frequency) {
-                fMap.set(r.entry[0]!, r.frequency)
-              }
-
-              return r.entry[0]!
-            })
-          )
-
-          if (rs.length) {
-            const rCond = makeRad.parse(q)
-            if (rCond) {
-              rCond.$and.push({ entry: { $in: result } })
-
-              result = await RadicalModel.find(rCond)
-                .select({
-                  _id: 0,
-                  entry: 1,
-                })
-                .then((rs) =>
-                  rs
-                    .map((r) => r.entry)
-                    .sort((a, b) => (fMap.get(b) || 0) - (fMap.get(a) || 0))
-                )
-            }
-          }
-        }
-
-        if (limit) {
-          result = result.slice(0, limit)
-        }
-
-        return { result }
       }
     )
   }
 
   {
-    const sResult = S.shape({
-      result: S.string(),
-      english: S.string(),
-      level: S.integer(),
+    const sQuery = S.shape({
+      entry: S.string(),
     })
 
-    f.get(
-      '/random',
+    const sResult = S.shape({
+      sub: S.list(S.string()),
+      sup: S.list(S.string()),
+      var: S.list(S.string()),
+    })
+
+    f.get<{
+      Querystring: typeof sQuery.type
+    }>(
+      '/radical',
       {
         schema: {
-          operationId: 'characterRandom',
-          response: { 200: sResult.valueOf() },
+          operationId: 'characterRadical',
+          querystring: sQuery.valueOf(),
+          response: {
+            200: sResult.valueOf(),
+          },
         },
       },
       async (req): Promise<typeof sResult.type> => {
+        const { entry } = req.query
+
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
         }
 
-        const u = await UserModel.findOne({ _id: userId })
-        if (!u) {
+        const rad = await RadicalModel.findOne({ entry })
+
+        return {
+          sub: rad?.sub || [],
+          sup: rad?.sup || [],
+          var: rad?.var || [],
+        }
+      }
+    )
+  }
+
+  {
+    const sQuery = S.shape({
+      entry: S.string(),
+      page: S.integer().optional(),
+      limit: S.integer().optional(),
+    })
+
+    const sResult = S.shape({
+      result: S.list(
+        S.shape({
+          entry: S.string(),
+          english: S.string(),
+        })
+      ),
+    })
+
+    f.get<{
+      Querystring: typeof sQuery.type
+    }>(
+      '/sentence',
+      {
+        schema: {
+          operationId: 'characterSentence',
+          querystring: sQuery.valueOf(),
+          response: {
+            200: sResult.valueOf(),
+          },
+        },
+      },
+      async (req): Promise<typeof sResult.type> => {
+        const { entry, page, limit = 5 } = req.query
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
           throw { statusCode: 401 }
         }
 
-        const [r] = await DictModel.aggregate([
+        const result = await EntryModel.aggregate([
           {
             $match: {
               $and: [
-                { level: { $lte: u.level } },
-                { level: { $gte: u.levelMin } },
-                { type: 'kanji' },
+                { entry: new RegExp(entry), type: 'sentence' },
+                {
+                  $or: [
+                    { userId },
+                    { sharedId: userId },
+                    { userId: { $exists: false } },
+                  ],
+                },
               ],
             },
           },
-          { $sample: { size: 1 } },
+          ...(page
+            ? [{ $skip: (page - 1) * limit }]
+            : [
+                { $addFields: { _sort: { $rand: {} } } },
+                { $sort: { _sort: 1 } },
+              ]),
+          { $limit: limit },
           {
             $project: {
               _id: 0,
-              result: { $first: '$entry' },
-              english: 1,
-              level: 1,
+              entry: { $first: '$entry' },
+              english: { $first: '$english' },
             },
           },
         ])
 
-        if (!r) {
-          throw { statusCode: 404 }
-        }
-
         return {
-          result: r.result,
-          english: r.english.join(' / '),
-          level: r.level,
+          result,
         }
       }
     )
   }
 }
 
-export default kanjiRouter
+export default characterRouter

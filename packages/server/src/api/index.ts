@@ -9,11 +9,10 @@ import csrf from 'fastify-csrf'
 import fSession from 'fastify-secure-session'
 import fSwagger from 'fastify-swagger'
 
+import browseRouter from './browse'
 import characterRouter from './character'
-import extraRouter from './extra'
-import sentenceRouter from './sentence'
 import utilRouter from './util'
-import vocabRouter from './vocabulary'
+import vocabularyRouter from './vocabulary'
 
 const apiRouter: FastifyPluginAsync = async (f) => {
   if (!fs.existsSync('session.key')) {
@@ -138,11 +137,10 @@ const apiRouter: FastifyPluginAsync = async (f) => {
     }
   })
 
+  f.register(browseRouter, { prefix: '/browse' })
   f.register(characterRouter, { prefix: '/character' })
-  f.register(extraRouter, { prefix: '/extra' })
-  f.register(sentenceRouter, { prefix: '/sentence' })
   f.register(utilRouter, { prefix: '/util' })
-  f.register(vocabRouter, { prefix: '/vocabulary' })
+  f.register(vocabularyRouter, { prefix: '/vocabulary' })
 }
 
 export default apiRouter

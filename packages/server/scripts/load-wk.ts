@@ -1,4 +1,4 @@
-import { DictModel, mongoConnect } from '@/db/mongo'
+import { EntryModel, mongoConnect } from '@/db/mongo'
 import { mongoose } from '@typegoose/typegoose'
 import axios from 'axios'
 import sqlite3 from 'better-sqlite3'
@@ -34,7 +34,7 @@ async function main() {
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
-    await DictModel.insertMany(
+    await EntryModel.insertMany(
       items.slice(i, i + chunkSize).map((it) => {
         return {
           entry: [it.characters],

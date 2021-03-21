@@ -15,73 +15,6 @@ setGlobalOptions({ options: { allowMixed: Severity.ALLOW } })
 
 mongoose.pluralize((null as unknown) as undefined)
 
-@index({ en: 'text' })
-class Sentence {
-  @prop({ required: true, unique: true }) ja!: string
-  @prop({ index: true }) word!: string[]
-
-  @prop({ required: true }) en!: string
-
-  @prop({ index: true }) vocab?: string
-  @prop({ index: true }) level?: number
-
-  @prop({
-    required: true,
-    index: true,
-    validate: (v: string) => ['wanikani', 'tatoeba'].includes(v),
-  })
-  source!: 'wanikani' | 'tatoeba'
-
-  @prop({ index: true, default: () => [] }) tag!: string[]
-}
-
-export const SentenceModel = getModelForClass(Sentence, {
-  schemaOptions: { timestamps: true },
-})
-
-@index({ english: 'text' })
-@index({ 'reading.kana': 1 })
-class Dict {
-  @prop({
-    index: true,
-    validate: (it: string[]) =>
-      Array.isArray(it) &&
-      it.length > 0 &&
-      it.every((el) => typeof el === 'string'),
-  })
-  entry!: string[]
-
-  @prop({ default: () => [] }) reading!: {
-    type?: 'kunyomi' | 'onyomi' | 'nanori'
-    kana: string
-    hidden?: boolean
-  }[]
-
-  @prop({ default: () => [] }) english!: string[]
-
-  @prop({ index: true }) level?: number
-  @prop() audio?: Record<string, string>
-
-  @prop({
-    index: true,
-    validate: (v: string) => ['kanji', 'vocabulary'].includes(v),
-  })
-  type!: 'kanji' | 'vocabulary'
-  @prop({
-    index: true,
-    validate: (v: string) => ['wanikani', 'edict', 'kanjidic'].includes(v),
-  })
-  source!: 'wanikani' | 'edict' | 'kanjidic'
-
-  @prop({ index: true, default: () => [] }) tag!: string[]
-
-  @prop({ index: true }) frequency?: number
-}
-
-export const DictModel = getModelForClass(Dict, {
-  schemaOptions: { timestamps: true },
-})
-
 class Radical {
   @prop({ required: true, index: true }) entry!: string
   @prop({ default: () => [], index: true }) sub!: string[]
@@ -112,20 +45,19 @@ export const UserModel = getModelForClass(User, {
   schemaOptions: { timestamps: true },
 })
 
-@index({ english: 'text' })
-class Extra {
+@index({ english: 'text', description: 'text' })
+class Entry {
   @prop({ default: () => nanoid() }) _id!: string
 
-  @prop({ index: true, required: true }) userId!: string
+  @prop({ index: true }) userId?: string
 
   @prop({
     index: true,
+    default: () => [],
     validate: (it: string[]) =>
-      Array.isArray(it) &&
-      it.length > 0 &&
-      it.every((el) => typeof el === 'string'),
+      Array.isArray(it) && it.every((el) => typeof el === 'string'),
   })
-  sharedId!: string[]
+  sharedId?: string[]
 
   @prop({
     index: true,
@@ -135,6 +67,12 @@ class Extra {
       it.every((el) => typeof el === 'string'),
   })
   entry!: string[]
+
+  @prop({
+    index: true,
+    default: () => [],
+  })
+  segments!: string[]
 
   @prop({ index: true, default: () => [] }) reading!: {
     type?: 'kunyomi' | 'onyomi' | 'nanori'
@@ -152,11 +90,15 @@ class Extra {
 
   @prop() audio?: Record<string, string>
 
-  @prop({ index: true }) type!: 'kanji' | 'vocabulary' | 'sentence'
+  @prop({ index: true }) level?: number
+  @prop({ index: true }) type!: 'character' | 'vocabulary' | 'sentence'
+  @prop({ index: true }) source?: string
+  @prop({ default: '' }) description!: string
   @prop({ index: true, default: () => [] }) tag!: string[]
+  @prop({ index: true }) frequency?: number
 }
 
-export const ExtraModel = getModelForClass(Extra, {
+export const EntryModel = getModelForClass(Entry, {
   schemaOptions: { timestamps: true },
 })
 
@@ -169,9 +111,10 @@ class Quiz {
   @prop({ required: true }) entry!: string
   @prop({
     required: true,
-    validate: (v: string) => ['kanji', 'vocabulary', 'sentence'].includes(v),
+    validate: (v: string) =>
+      ['character', 'vocabulary', 'sentence'].includes(v),
   })
-  type!: 'kanji' | 'vocabulary' | 'sentence'
+  type!: 'character' | 'vocabulary' | 'sentence'
   @prop({ required: true }) direction!: 'je' | 'ej'
 
   @prop({ index: true }) srsLevel?: number
@@ -261,9 +204,10 @@ class Library {
   entries!: string[]
   @prop({
     required: true,
-    validate: (v: string) => ['kanji', 'vocabulary', 'sentence'].includes(v),
+    validate: (v: string) =>
+      ['character', 'vocabulary', 'sentence'].includes(v),
   })
-  type!: 'kanji' | 'vocabulary' | 'sentence'
+  type!: 'character' | 'vocabulary' | 'sentence'
 
   @prop({ default: () => [], index: true }) tag!: string[]
   @prop({ default: '' }) description!: string

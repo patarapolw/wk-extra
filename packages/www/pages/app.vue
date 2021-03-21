@@ -107,6 +107,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'nuxt-property-decorator'
+import { wanikaniApiKey } from '~/assets/api'
 
 // eslint-disable-next-line no-use-before-define
 @Component<AppPage>({
@@ -119,6 +120,11 @@ import { Component, Vue } from 'nuxt-property-decorator'
     RandomTab: () => import('@/components/tabs/RandomTab.vue'),
     SettingsTab: () => import('@/components/tabs/SettingsTab.vue'),
     VocabularyTab: () => import('@/components/tabs/VocabularyTab.vue'),
+  },
+  middleware({ redirect }) {
+    if (!wanikaniApiKey.get()) {
+      redirect('/')
+    }
   },
   created() {
     this.addTab('Random', true)
@@ -151,13 +157,13 @@ export default class AppPage extends Vue {
         icon: 'chalkboard-teacher',
       },
       {
-        component: 'Hanzi',
+        component: 'Kanji',
         text: '字',
         className: 'font-han',
       },
       {
         component: 'Vocab',
-        text: '词',
+        text: '単',
         className: 'font-han',
       },
       {

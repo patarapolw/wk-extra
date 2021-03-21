@@ -6,10 +6,37 @@ import OpenAPIClientAxios from 'openapi-client-axios'
 
 import { Client } from '../types/openapi'
 
-export const apiURL = process.env.API_URL
+export const wanikaniApiKey = {
+  _key: 'WANIKANI_API_KEY',
+  _value: '',
+  get() {
+    if (!this._value) {
+      this._value = localStorage.getItem(this._key) || ''
+      if (this._value) {
+        this.set(this._value)
+      }
+    }
+
+    return this._value
+  },
+  set(v: string) {
+    localStorage.setItem(this._key, v)
+    this._value = v
+
+    api.defaults.headers.Authorization = `Bearer ${this._value}`
+  },
+}
 
 export const apiClient = new OpenAPIClientAxios({
   definition: require('./openapi.json'),
+  axiosConfigDefaults: {
+    headers: {
+      Authorization: (() => {
+        const apiKey = wanikaniApiKey.get()
+        return apiKey ? `Bearer ${apiKey}` : undefined
+      })(),
+    },
+  },
 })
 
 // eslint-disable-next-line import/no-mutable-exports
@@ -27,7 +54,6 @@ export async function initAPI() {
   }
 
   api = await apiClient.init<Client>()
-  api.defaults.baseURL = apiURL
 
   api.interceptors.request.use((config) => {
     if (!loading) {

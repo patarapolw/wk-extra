@@ -3,10 +3,13 @@
 </template>
 
 <script>
+import { wanikaniApiKey } from '~/assets/api'
 export default {
-  name: 'HomePage',
+  name: 'LoginPage',
   middleware: ({ redirect }) => {
-    redirect('/app')
+    if (wanikaniApiKey.get()) {
+      redirect('/app')
+    }
   },
 }
 </script>

@@ -289,7 +289,14 @@ export default class VocabularyTab extends Vue {
         .utilTokenize(q)
         .then((r) => r.data.result.map((v) => v.base_form || v.surface_form))
     } else {
-      this.entries = [q]
+      this.entries = [
+        {
+          entry: q,
+          alt: [],
+          reading: '',
+          english: '',
+        },
+      ]
     }
 
     await this.loadContent()
