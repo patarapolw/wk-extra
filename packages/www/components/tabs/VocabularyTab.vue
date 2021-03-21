@@ -1,0 +1,391 @@
+<template>
+  <section>
+    <div class="VocabPage">
+      <form class="field" @submit.prevent="q = q0">
+        <div class="control">
+          <input
+            v-model="q0"
+            type="search"
+            class="input"
+            name="q"
+            placeholder="Type here to search."
+            aria-label="search"
+          />
+        </div>
+      </form>
+
+      <div class="columns">
+        <div class="column is-6 entry-display">
+          <div
+            :class="
+              simplified.length > 3 ? 'smaller-vocab-display' : 'vocab-display'
+            "
+          >
+            <div
+              class="clickable text-center font-zh-simp"
+              @contextmenu.prevent="
+                (evt) => openContext(evt, simplified, 'vocab')
+              "
+            >
+              {{ simplified }}
+            </div>
+          </div>
+
+          <div class="buttons has-addons">
+            <button
+              class="button"
+              :disabled="i < 1"
+              @click="i--"
+              @keypress="i--"
+            >
+              Previous
+            </button>
+            <button
+              class="button"
+              :disabled="i > entries.length - 2"
+              @click="i++"
+              @keypress="i++"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        <div class="column is-6">
+          <b-collapse
+            class="card"
+            animation="slide"
+            style="margin-bottom: 1em"
+            :open="typeof current === 'object'"
+          >
+            <div
+              slot="trigger"
+              slot-scope="props"
+              class="card-header"
+              role="button"
+            >
+              <h2 class="card-header-title">Reading</h2>
+              <a role="button" class="card-header-icon">
+                <fontawesome :icon="props.open ? 'caret-down' : 'caret-up'" />
+              </a>
+            </div>
+
+            <div class="card-content">
+              <span>{{ current.pinyin }}</span>
+            </div>
+          </b-collapse>
+
+          <b-collapse
+            class="card"
+            animation="slide"
+            :open="!!current.traditional"
+          >
+            <div
+              slot="trigger"
+              slot-scope="props"
+              class="card-header"
+              role="button"
+            >
+              <h2 class="card-header-title">Traditional</h2>
+              <a role="button" class="card-header-icon">
+                <fontawesome :icon="props.open ? 'caret-down' : 'caret-up'" />
+              </a>
+            </div>
+
+            <div class="card-content">
+              <div
+                class="font-zh-trad clickable"
+                @contextmenu.prevent="
+                  (evt) => openContext(evt, current.traditional, 'vocab')
+                "
+              >
+                {{ current.traditional }}
+              </div>
+            </div>
+          </b-collapse>
+
+          <b-collapse class="card" animation="slide" :open="!!current.english">
+            <div
+              slot="trigger"
+              slot-scope="props"
+              class="card-header"
+              role="button"
+            >
+              <h2 class="card-header-title">English</h2>
+              <a role="button" class="card-header-icon">
+                <fontawesome :icon="props.open ? 'caret-down' : 'caret-up'" />
+              </a>
+            </div>
+
+            <div class="card-content">
+              <span>{{ current.english }}</span>
+            </div>
+          </b-collapse>
+
+          <b-collapse
+            :key="sentenceKey"
+            class="card"
+            animation="slide"
+            :open="!!sentences().length"
+          >
+            <div
+              slot="trigger"
+              slot-scope="props"
+              class="card-header"
+              role="button"
+            >
+              <h2 class="card-header-title">Sentences</h2>
+              <a role="button" class="card-header-icon">
+                <fontawesome :icon="props.open ? 'caret-down' : 'caret-up'" />
+              </a>
+            </div>
+
+            <div class="card-content">
+              <div
+                v-for="(s, i) in sentences()"
+                :key="i"
+                class="sentence-entry"
+              >
+                <span
+                  class="clickable"
+                  @contextmenu.prevent="
+                    (evt) => openContext(evt, s.chinese, 'sentence')
+                  "
+                >
+                  {{ s.chinese }}
+                </span>
+                <span>{{ s.english }}</span>
+              </div>
+            </div>
+          </b-collapse>
+        </div>
+      </div>
+    </div>
+
+    <ContextMenu
+      ref="context"
+      :entry="selected.entry"
+      :type="selected.type"
+      :additional="additionalContext"
+      :pinyin="sentenceDef.pinyin"
+      :english="sentenceDef.english"
+    />
+  </section>
+</template>
+
+<script lang="ts">
+import { Component, Ref, Vue } from 'nuxt-property-decorator'
+import ContextMenu from '@/components/ContextMenu.vue'
+import { findSentence, findSentenceSync } from '@/assets/db'
+import { api } from '~/assets/api'
+
+// eslint-disable-next-line no-use-before-define
+@Component<VocabularyTab>({
+  components: {
+    ContextMenu,
+  },
+  watch: {
+    q() {
+      this.onQChange(this.q)
+    },
+    current() {
+      this.loadContent()
+    },
+  },
+})
+export default class VocabularyTab extends Vue {
+  @Ref() context!: ContextMenu
+
+  entries: {
+    entry: string
+    alt: string[]
+    reading: string
+    english: string
+  }[] = []
+
+  i = 0
+
+  selected: {
+    entry: string
+    type: string
+  } = {
+    entry: '',
+    type: '',
+  }
+
+  q0 = ''
+  title = 'Vocabulary'
+
+  sentenceKey = 0
+
+  sentences() {
+    if (!this.current) {
+      return []
+    }
+
+    return findSentenceSync(this.current.entry, 10)
+  }
+
+  get q() {
+    const q = this.$route.query.q
+    return (Array.isArray(q) ? q[0] : q) || ''
+  }
+
+  set q(q: string) {
+    this.$router.push({ query: { q } })
+  }
+
+  get current() {
+    return this.entries[this.i]
+  }
+
+  async created() {
+    let entry = this.$route.query.entry as string
+
+    if (!(entry || this.q)) {
+      entry = await api.vocabularyRandom().then((r) => r.data.result)
+    }
+
+    this.q0 = entry || this.q
+
+    if (entry) {
+      this.title = (entry ? entry + ' - ' : '') + 'Vocab'
+      this.entries = [{ entry, alt: [], reading: '', english: '' }]
+      await this.loadContent()
+    } else {
+      await this.onQChange(this.q0)
+    }
+  }
+
+  get additionalContext() {
+    if (!this.q) {
+      return [
+        {
+          name: 'Reload',
+          handler: async () => {
+            this.q0 = await api.vocabularyRandom().then((r) => r.data.result)
+          },
+        },
+      ]
+    }
+
+    return []
+  }
+
+  openContext(
+    evt: MouseEvent,
+    entry = this.selected.entry,
+    type = this.selected.type
+  ) {
+    this.selected = { entry, type }
+    this.context.open(evt)
+  }
+
+  async onQChange(q: string) {
+    this.title = (q ? q + ' - ' : '') + 'Vocab'
+
+    if (/\p{sc=Han}+/u.test(q)) {
+      this.entries = await api
+        .utilTokenize(q)
+        .then((r) => r.data.result.map((v) => v.base_form || v.surface_form))
+    } else {
+      this.entries = [q]
+    }
+
+    await this.loadContent()
+
+    this.i = 0
+  }
+
+  async loadContent() {
+    let entry = this.entries[this.i]
+    if (!entry) {
+      return
+    }
+
+    if (!entry.reading) {
+      if (/\p{sc=Han}/u.test(entry.entry)) {
+        const result = await api
+          .vocabularyGetOne({
+            entry: entry.entry,
+          })
+          .then((r) => r.data.result)
+
+        if (result.length > 0) {
+          entry = result[0].simplified
+          this.entries = [
+            ...this.entries.slice(0, this.i),
+            ...result,
+            ...this.entries.slice(this.i + 1),
+          ]
+        } else {
+          this.entries = [
+            ...this.entries.slice(0, this.i),
+            {
+              entry: entry.entry,
+              alt: [],
+              reading: await api
+                .utilReading({ q: entry.entry })
+                .then((r) => r.data.result),
+              english: '',
+            },
+            ...this.entries.slice(this.i + 1),
+          ]
+        }
+      } else {
+        this.entries = [
+          ...this.entries.slice(0, this.i),
+          {
+            entry: entry.entry,
+            alt: [],
+            reading: await api
+              .utilReading({ q: entry.entry })
+              .then((r) => r.data.result),
+            english: '',
+          },
+          ...this.entries.slice(this.i + 1),
+        ]
+      }
+    }
+
+    if (!entry.english) {
+      return
+    }
+
+    if (await findSentence(entry.entry, 10)) {
+      this.sentenceKey = Math.random()
+    }
+  }
+}
+</script>
+
+<style scoped>
+.entry-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.entry-display .clickable {
+  min-height: 1.5em;
+  display: block;
+}
+
+.card {
+  margin-bottom: 1rem;
+}
+
+.card [class^='font-'] {
+  font-size: 60px;
+  height: 80px;
+}
+
+.card-content {
+  max-height: 250px;
+  overflow: scroll;
+}
+
+.sentence-entry {
+  margin-right: 1rem;
+}
+</style>

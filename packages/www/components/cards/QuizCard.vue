@@ -335,7 +335,7 @@
 import { Vue, Component, Prop, Ref } from 'vue-property-decorator'
 import { api } from '@/assets/api'
 import { dbSentence, findSentence } from '@/assets/db'
-import ContextMenu from './ContextMenu.vue'
+import ContextMenu from '../ContextMenu.vue'
 
 export type IQuizType = 'character' | 'vocabulary' | 'sentence'
 
@@ -349,11 +349,7 @@ export interface IQuizData {
   entry?: string
 }
 
-@Component({
-  components: {
-    ContextMenu,
-  },
-})
+@Component
 export default class QuizCard extends Vue {
   @Prop({ required: true }) quizArray!: string[]
 

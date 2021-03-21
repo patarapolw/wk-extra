@@ -52,13 +52,10 @@
 <script lang="ts">
 import { api } from '@/assets/api'
 import { Vue, Component, Ref, Prop } from 'vue-property-decorator'
-import ContextMenu from './ContextMenu.vue'
+import ContextMenu from '../ContextMenu.vue'
 
 // eslint-disable-next-line no-use-before-define
 @Component<LibraryCard>({
-  components: {
-    ContextMenu,
-  },
   watch: {
     isOpen() {
       if (this.isOpen) {
