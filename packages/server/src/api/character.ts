@@ -29,6 +29,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
       '/',
       {
         schema: {
+          operationId: 'characterGetOne',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -194,6 +195,7 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
       '/q',
       {
         schema: {
+          operationId: 'characterQuery',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -305,7 +307,12 @@ const kanjiRouter: FastifyPluginAsync = async (f) => {
 
     f.get(
       '/random',
-      { schema: { response: { 200: sResult.valueOf() } } },
+      {
+        schema: {
+          operationId: 'characterRandom',
+          response: { 200: sResult.valueOf() },
+        },
+      },
       async (req): Promise<typeof sResult.type> => {
         const userId: string = req.session.get('userId')
         if (!userId) {

@@ -76,6 +76,7 @@ const extraRouter: FastifyPluginAsync = async (f) => {
       '/q',
       {
         schema: {
+          operationId: 'extraQuery',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),

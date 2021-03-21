@@ -5,6 +5,12 @@
     },
     {
       "path": "packages/python"
+    },
+    {
+      "path": "packages/server"
+    },
+    {
+      "path": "packages/www"
     }
   ]
 }

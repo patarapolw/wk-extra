@@ -21,6 +21,7 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
       '/',
       {
         schema: {
+          operationId: 'sentenceGetOne',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -115,6 +116,7 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
       '/q',
       {
         schema: {
+          operationId: 'sentenceQuery',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -179,7 +181,12 @@ const sentenceRouter: FastifyPluginAsync = async (f) => {
 
     f.get(
       '/random',
-      { schema: { response: { 200: sResult.valueOf() } } },
+      {
+        schema: {
+          operationId: 'sentenceRandom',
+          response: { 200: sResult.valueOf() },
+        },
+      },
       async (req): Promise<typeof sResult.type> => {
         const userId: string = req.session.get('userId')
         if (!userId) {

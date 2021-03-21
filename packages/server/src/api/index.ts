@@ -9,11 +9,11 @@ import csrf from 'fastify-csrf'
 import fSession from 'fastify-secure-session'
 import fSwagger from 'fastify-swagger'
 
+import characterRouter from './character'
 import extraRouter from './extra'
-import kanjiRouter from './kanji'
 import sentenceRouter from './sentence'
 import utilRouter from './util'
-import vocabRouter from './vocab'
+import vocabRouter from './vocabulary'
 
 const apiRouter: FastifyPluginAsync = async (f) => {
   if (!fs.existsSync('session.key')) {
@@ -59,11 +59,19 @@ const apiRouter: FastifyPluginAsync = async (f) => {
     })
   }
 
-  f.get('/settings', async (_, reply) => {
-    return {
-      csrf: await reply.generateCsrf(),
+  f.get(
+    '/settings',
+    {
+      schema: {
+        operationId: 'settings',
+      },
+    },
+    async (_, reply) => {
+      return {
+        csrf: await reply.generateCsrf(),
+      }
     }
-  })
+  )
 
   f.addHook('preHandler', async (req) => {
     if (['/api/doc', '/api/settings'].some((s) => req.url.startsWith(s))) {
@@ -130,11 +138,11 @@ const apiRouter: FastifyPluginAsync = async (f) => {
     }
   })
 
+  f.register(characterRouter, { prefix: '/character' })
   f.register(extraRouter, { prefix: '/extra' })
-  f.register(kanjiRouter, { prefix: '/kanji' })
   f.register(sentenceRouter, { prefix: '/sentence' })
   f.register(utilRouter, { prefix: '/util' })
-  f.register(vocabRouter, { prefix: '/vocab' })
+  f.register(vocabRouter, { prefix: '/vocabulary' })
 }
 
 export default apiRouter
