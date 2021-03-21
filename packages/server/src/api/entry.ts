@@ -123,6 +123,10 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
+        if (type === 'character' && !isHan(entry)) {
+          throw { statusCode: 400, message: 'not all Kanji' }
+        }
+
         let segments: string[] = []
         if (type === 'sentence') {
           segments = kuromoji
@@ -237,6 +241,10 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
+        }
+
+        if (type === 'character' && !isHan(entry)) {
+          throw { statusCode: 400, message: 'not all Kanji' }
         }
 
         let segments: string[] = []
@@ -500,6 +508,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
     const sResult = S.shape({
       result: S.list(
         S.shape({
+          id: S.string(),
           entry: S.list(S.string()),
           reading: S.list(
             S.shape({
@@ -661,7 +670,6 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           .skip((page - 1) * limit)
           .limit(limit)
           .select({
-            _id: 0,
             entry: 1,
             reading: 1,
             english: 1,
@@ -673,6 +681,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         const rMap: Record<
           'user' | 'wanikani' | 'others',
           {
+            id: string
             entry: string[]
             reading: {
               type?: string
@@ -690,6 +699,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
 
         rs.map((d) => {
           const v = {
+            id: d._id,
             entry: d.entry,
             reading: (d.reading as any[])
               .filter((r) => !r.hidden)

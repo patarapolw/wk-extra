@@ -11,6 +11,7 @@ import fSwagger from 'fastify-swagger'
 
 import characterRouter from './character'
 import entryRouter from './entry'
+import libraryRouter from './library'
 import utilRouter from './util'
 import vocabularyRouter from './vocabulary'
 
@@ -139,6 +140,7 @@ const apiRouter: FastifyPluginAsync = async (f) => {
 
   f.register(characterRouter, { prefix: '/character' })
   f.register(entryRouter, { prefix: '/entry' })
+  f.register(libraryRouter, { prefix: '/library' })
   f.register(utilRouter, { prefix: '/util' })
   f.register(vocabularyRouter, { prefix: '/vocabulary' })
 }

@@ -176,17 +176,14 @@ export const QuizModel = getModelForClass(Quiz, {
 
 @index({ description: 'text' })
 class Library {
-  @prop({ default: () => nanoid() }) _id!: string
+  @prop({ default: () => nanoid() }) _id?: string
   @prop({ index: true }) userId?: string
 
   @prop({
     index: true,
-    validate: (it: string[]) =>
-      Array.isArray(it) &&
-      it.length > 0 &&
-      it.every((el) => typeof el === 'string'),
+    default: () => [],
   })
-  sharedId!: string[]
+  sharedId?: string[]
 
   @prop({ required: true }) title!: string
   @prop({
@@ -202,7 +199,7 @@ class Library {
     validate: (v: string) =>
       ['character', 'vocabulary', 'sentence'].includes(v),
   })
-  type!: 'character' | 'vocabulary' | 'sentence'
+  type!: string // 'character' | 'vocabulary' | 'sentence'
 
   @prop({ default: () => [], index: true }) tag!: string[]
   @prop({ default: '' }) description!: string
