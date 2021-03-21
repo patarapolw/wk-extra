@@ -7,72 +7,6 @@ import {
 } from 'openapi-client-axios'; 
 
 declare namespace Paths {
-  namespace BrowseGetOne {
-    namespace Parameters {
-      export type Entry = string;
-      export type Type = "character" | "vocabulary" | "sentence";
-    }
-    export interface QueryParameters {
-      entry: Parameters.Entry;
-      type: Parameters.Type;
-    }
-    namespace Responses {
-      export interface $200 {
-        entry: string;
-        alt: string[];
-        reading: {
-          type?: string;
-          kana: string;
-        }[];
-        english: string[];
-      }
-    }
-  }
-  namespace BrowseQuery {
-    namespace Parameters {
-      export type All = boolean;
-      export type Limit = number;
-      export type Page = number;
-      export type Q = string;
-      export type Type = "character" | "vocabulary" | "sentence";
-    }
-    export interface QueryParameters {
-      q: Parameters.Q;
-      page?: Parameters.Page;
-      limit?: Parameters.Limit;
-      all?: Parameters.All;
-      type?: Parameters.Type;
-    }
-    namespace Responses {
-      export interface $200 {
-        result: {
-          entry: string[];
-          reading: {
-            type?: string;
-            kana: string;
-          }[];
-          english: string[];
-          type: string;
-          source?: string;
-        }[];
-      }
-    }
-  }
-  namespace BrowseRandom {
-    namespace Parameters {
-      export type Type = "character" | "vocabulary" | "sentence";
-    }
-    export interface QueryParameters {
-      type: Parameters.Type;
-    }
-    namespace Responses {
-      export interface $200 {
-        result: string;
-        english: string;
-        level: number;
-      }
-    }
-  }
   namespace CharacterRadical {
     namespace Parameters {
       export type Entry = string;
@@ -120,6 +54,310 @@ declare namespace Paths {
       export interface $200 {
         result: {
           entry: string;
+        }[];
+      }
+    }
+  }
+  namespace EntryCreate {
+    export interface RequestBody {
+      entry: string;
+      alt: string[];
+      reading: {
+        type?: string;
+        kana: string;
+      }[];
+      english: string[];
+      audio: string[];
+      type: "character" | "vocabulary" | "sentence";
+      description: string;
+      tag: string[];
+    }
+    namespace Responses {
+      export interface $200 {
+        id: string;
+      }
+    }
+  }
+  namespace EntryDelete {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+      }
+    }
+  }
+  namespace EntryGetByEntry {
+    namespace Parameters {
+      export type Entry = string;
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      entry: Parameters.Entry;
+      type: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        entry: string;
+        alt: string[];
+        reading: {
+          type?: string;
+          kana: string;
+        }[];
+        english: string[];
+      }
+    }
+  }
+  namespace EntryGetById {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    namespace Responses {
+      export interface $200 {
+        entry: string;
+        alt: string[];
+        reading: {
+          type?: string;
+          kana: string;
+        }[];
+        english: string[];
+        audio: string[];
+        type: string;
+        description: string;
+        tag: string[];
+      }
+    }
+  }
+  namespace EntryQuery {
+    namespace Parameters {
+      export type All = boolean;
+      export type Limit = number;
+      export type Page = number;
+      export type Q = string;
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      q: Parameters.Q;
+      page?: Parameters.Page;
+      limit?: Parameters.Limit;
+      all?: Parameters.All;
+      type?: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: {
+          id: string;
+          entry: string[];
+          reading: {
+            type?: string;
+            kana: string;
+          }[];
+          english: string[];
+          type: string;
+          source?: string;
+        }[];
+      }
+    }
+  }
+  namespace EntryRandom {
+    namespace Parameters {
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      type: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+        english: string;
+        level: number;
+      }
+    }
+  }
+  namespace EntryUpdate {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    export interface RequestBody {
+      entry: string;
+      alt: string[];
+      reading: {
+        type?: string;
+        kana: string;
+      }[];
+      english: string[];
+      audio: string[];
+      type: "character" | "vocabulary" | "sentence";
+      description: string;
+      tag: string[];
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+      }
+    }
+  }
+  namespace LibraryCreate {
+    export interface RequestBody {
+      title: string;
+      entries: string[];
+      type: string;
+      description: string;
+      tag: string[];
+    }
+    namespace Responses {
+      export interface $200 {
+        id: string;
+      }
+    }
+  }
+  namespace LibraryDelete {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+      }
+    }
+  }
+  namespace LibraryEntry {
+    namespace Parameters {
+      export type Limit = number;
+      export type Page = number;
+      export type Q = string;
+    }
+    export interface QueryParameters {
+      q: Parameters.Q;
+      page?: Parameters.Page;
+      limit?: Parameters.Limit;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: {
+          id: string;
+          title: string;
+          entries: string[];
+          type: string;
+        }[];
+      }
+    }
+  }
+  namespace LibraryGetOne {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    namespace Responses {
+      export interface $200 {
+        title: string;
+        entries: string[];
+        type: string;
+        description: string;
+        tag: string[];
+      }
+    }
+  }
+  namespace LibraryUpdate {
+    namespace Parameters {
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+    }
+    export interface RequestBody {
+      title: string;
+      entries: string[];
+      type: string;
+      description: string;
+      tag: string[];
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+      }
+    }
+  }
+  namespace QuizCreate {
+    export interface RequestBody {
+      entry: string[];
+      type: string;
+    }
+    namespace Responses {
+      export interface $201 {
+        result: string;
+      }
+    }
+  }
+  namespace QuizDelete {
+    export interface RequestBody {
+      entry: string[];
+      type: string;
+      direction: string[];
+    }
+    namespace Responses {
+      export interface $201 {
+        result: string;
+      }
+    }
+  }
+  namespace QuizDoLevel {
+    namespace Parameters {
+      export type D = number;
+      export type Id = string;
+    }
+    export interface QueryParameters {
+      id: Parameters.Id;
+      d: Parameters.D;
+    }
+    namespace Responses {
+      export interface $201 {
+        result: string;
+      }
+    }
+  }
+  namespace QuizQuery {
+    namespace Parameters {
+      export type Direction = string;
+      export type IncludeUndue = boolean;
+      export type Q = string;
+      export type Stage = string;
+      export type Type = string;
+    }
+    export interface QueryParameters {
+      q: Parameters.Q;
+      type: Parameters.Type;
+      direction: Parameters.Direction;
+      stage: Parameters.Stage;
+      includeUndue: Parameters.IncludeUndue;
+    }
+    namespace Responses {
+      export interface $200 {
+        quiz: {
+          id: string;
+          nextReview?: string; // date-time
+          stage: string;
+          entry: string;
+          type: string;
+          direction: string;
+        }[];
+        upcoming: {
+          nextReview?: string; // date-time
         }[];
       }
     }
@@ -197,29 +435,133 @@ export interface OperationMethods {
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.CharacterSentence.Responses.$200>
   /**
-   * browseGetOne
+   * entryGetById
    */
-  'browseGetOne'(
-    parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
+  'entryGetById'(
+    parameters?: Parameters<Paths.EntryGetById.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
+  ): OperationResponse<Paths.EntryGetById.Responses.$200>
   /**
-   * browseQuery
+   * entryCreate
    */
-  'browseQuery'(
-    parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
-    data?: any,
+  'entryCreate'(
+    parameters?: Parameters<UnknownParamsObject> | null,
+    data?: Paths.EntryCreate.RequestBody,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseQuery.Responses.$200>
+  ): OperationResponse<Paths.EntryCreate.Responses.$200>
   /**
-   * browseRandom
+   * entryUpdate
    */
-  'browseRandom'(
-    parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
+  'entryUpdate'(
+    parameters?: Parameters<Paths.EntryUpdate.QueryParameters> | null,
+    data?: Paths.EntryUpdate.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.EntryUpdate.Responses.$200>
+  /**
+   * entryDelete
+   */
+  'entryDelete'(
+    parameters?: Parameters<Paths.EntryDelete.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.BrowseRandom.Responses.$200>
+  ): OperationResponse<Paths.EntryDelete.Responses.$200>
+  /**
+   * entryGetByEntry
+   */
+  'entryGetByEntry'(
+    parameters?: Parameters<Paths.EntryGetByEntry.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.EntryGetByEntry.Responses.$200>
+  /**
+   * entryQuery
+   */
+  'entryQuery'(
+    parameters?: Parameters<Paths.EntryQuery.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.EntryQuery.Responses.$200>
+  /**
+   * entryRandom
+   */
+  'entryRandom'(
+    parameters?: Parameters<Paths.EntryRandom.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.EntryRandom.Responses.$200>
+  /**
+   * libraryGetOne
+   */
+  'libraryGetOne'(
+    parameters?: Parameters<Paths.LibraryGetOne.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.LibraryGetOne.Responses.$200>
+  /**
+   * libraryCreate
+   */
+  'libraryCreate'(
+    parameters?: Parameters<UnknownParamsObject> | null,
+    data?: Paths.LibraryCreate.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.LibraryCreate.Responses.$200>
+  /**
+   * libraryUpdate
+   */
+  'libraryUpdate'(
+    parameters?: Parameters<Paths.LibraryUpdate.QueryParameters> | null,
+    data?: Paths.LibraryUpdate.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.LibraryUpdate.Responses.$200>
+  /**
+   * libraryDelete
+   */
+  'libraryDelete'(
+    parameters?: Parameters<Paths.LibraryDelete.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.LibraryDelete.Responses.$200>
+  /**
+   * libraryEntry
+   */
+  'libraryEntry'(
+    parameters?: Parameters<Paths.LibraryEntry.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.LibraryEntry.Responses.$200>
+  /**
+   * quizCreate
+   */
+  'quizCreate'(
+    parameters?: Parameters<UnknownParamsObject> | null,
+    data?: Paths.QuizCreate.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.QuizCreate.Responses.$201>
+  /**
+   * quizDoLevel
+   */
+  'quizDoLevel'(
+    parameters?: Parameters<Paths.QuizDoLevel.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.QuizDoLevel.Responses.$201>
+  /**
+   * quizDelete
+   */
+  'quizDelete'(
+    parameters?: Parameters<UnknownParamsObject> | null,
+    data?: Paths.QuizDelete.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.QuizDelete.Responses.$201>
+  /**
+   * quizQuery
+   */
+  'quizQuery'(
+    parameters?: Parameters<Paths.QuizQuery.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.QuizQuery.Responses.$200>
   /**
    * utilTokenize
    */
@@ -295,35 +637,157 @@ export interface PathsDictionary {
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.CharacterSentence.Responses.$200>
   }
-  ['/api/entry/']: {
+  ['/api/entry/id']: {
     /**
-     * browseGetOne
+     * entryGetById
      */
     'get'(
-      parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
+      parameters?: Parameters<Paths.EntryGetById.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
+    ): OperationResponse<Paths.EntryGetById.Responses.$200>
+  }
+  ['/api/entry/']: {
+    /**
+     * entryCreate
+     */
+    'put'(
+      parameters?: Parameters<UnknownParamsObject> | null,
+      data?: Paths.EntryCreate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.EntryCreate.Responses.$200>
+    /**
+     * entryUpdate
+     */
+    'patch'(
+      parameters?: Parameters<Paths.EntryUpdate.QueryParameters> | null,
+      data?: Paths.EntryUpdate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.EntryUpdate.Responses.$200>
+    /**
+     * entryDelete
+     */
+    'delete'(
+      parameters?: Parameters<Paths.EntryDelete.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.EntryDelete.Responses.$200>
+  }
+  ['/api/entry/entry']: {
+    /**
+     * entryGetByEntry
+     */
+    'get'(
+      parameters?: Parameters<Paths.EntryGetByEntry.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.EntryGetByEntry.Responses.$200>
   }
   ['/api/entry/q']: {
     /**
-     * browseQuery
+     * entryQuery
      */
     'get'(
-      parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
+      parameters?: Parameters<Paths.EntryQuery.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseQuery.Responses.$200>
+    ): OperationResponse<Paths.EntryQuery.Responses.$200>
   }
   ['/api/entry/random']: {
     /**
-     * browseRandom
+     * entryRandom
      */
     'get'(
-      parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
+      parameters?: Parameters<Paths.EntryRandom.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.BrowseRandom.Responses.$200>
+    ): OperationResponse<Paths.EntryRandom.Responses.$200>
+  }
+  ['/api/library/id']: {
+    /**
+     * libraryGetOne
+     */
+    'get'(
+      parameters?: Parameters<Paths.LibraryGetOne.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.LibraryGetOne.Responses.$200>
+  }
+  ['/api/library/']: {
+    /**
+     * libraryCreate
+     */
+    'put'(
+      parameters?: Parameters<UnknownParamsObject> | null,
+      data?: Paths.LibraryCreate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.LibraryCreate.Responses.$200>
+    /**
+     * libraryUpdate
+     */
+    'patch'(
+      parameters?: Parameters<Paths.LibraryUpdate.QueryParameters> | null,
+      data?: Paths.LibraryUpdate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.LibraryUpdate.Responses.$200>
+    /**
+     * libraryDelete
+     */
+    'delete'(
+      parameters?: Parameters<Paths.LibraryDelete.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.LibraryDelete.Responses.$200>
+  }
+  ['/api/library/q']: {
+    /**
+     * libraryEntry
+     */
+    'get'(
+      parameters?: Parameters<Paths.LibraryEntry.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.LibraryEntry.Responses.$200>
+  }
+  ['/api/quiz/']: {
+    /**
+     * quizCreate
+     */
+    'put'(
+      parameters?: Parameters<UnknownParamsObject> | null,
+      data?: Paths.QuizCreate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.QuizCreate.Responses.$201>
+  }
+  ['/api/quiz/doLevel']: {
+    /**
+     * quizDoLevel
+     */
+    'patch'(
+      parameters?: Parameters<Paths.QuizDoLevel.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.QuizDoLevel.Responses.$201>
+  }
+  ['/api/quiz/delete']: {
+    /**
+     * quizDelete
+     */
+    'post'(
+      parameters?: Parameters<UnknownParamsObject> | null,
+      data?: Paths.QuizDelete.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.QuizDelete.Responses.$201>
+  }
+  ['/api/quiz/q']: {
+    /**
+     * quizQuery
+     */
+    'get'(
+      parameters?: Parameters<Paths.QuizQuery.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.QuizQuery.Responses.$200>
   }
   ['/api/util/tokenize']: {
     /**

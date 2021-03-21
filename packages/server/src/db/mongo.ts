@@ -86,7 +86,7 @@ class Entry {
   @prop() audio?: Record<string, string>
 
   @prop({ index: true }) level?: number
-  @prop({ index: true }) type!: 'character' | 'vocabulary' | 'sentence'
+  @prop({ index: true }) type!: string // 'character' | 'vocabulary' | 'sentence'
   @prop({ index: true }) source?: string
   @prop({ default: '' }) description!: string
   @prop({ index: true, default: () => [] }) tag!: string[]

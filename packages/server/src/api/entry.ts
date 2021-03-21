@@ -1,6 +1,6 @@
 import { kuromoji, kuroshiro } from '@/db/kuro'
 import { EntryModel, RadicalModel, UserModel } from '@/db/mongo'
-import { QSplit } from '@/db/token'
+import { QSplit, qDateUndefined, qNumberUndefined } from '@/db/token'
 import { isHan } from '@/db/util'
 import { FastifyPluginAsync } from 'fastify'
 import { katakanaToHiragana, romajiToHiragana } from 'jskana'
@@ -554,6 +554,20 @@ const entryRouter: FastifyPluginAsync = async (f) => {
       },
     })
 
+    const makeQuiz = new QSplit({
+      default: () => ({}),
+      fields: {
+        srsLevel: qNumberUndefined('srsLevel'),
+        nextReview: qDateUndefined('nextReview'),
+        lastRight: qDateUndefined('lastRight'),
+        lastWrong: qDateUndefined('lastWrong'),
+        maxRight: qNumberUndefined('maxRight'),
+        maxWrong: qNumberUndefined('maxWrong'),
+        rightStreak: qNumberUndefined('rightStreak'),
+        wrongStreak: qNumberUndefined('wrongStreak'),
+      },
+    })
+
     f.get<{
       Querystring: typeof sQuery.type
     }>(
@@ -577,10 +591,6 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         }
 
         q = q.trim()
-
-        if (!q) {
-          return { result: [] }
-        }
 
         let entries: string[] | null = null
         if (type === 'character') {
@@ -651,32 +661,65 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         })
 
         const dCond = makeJa.parse(q) || {}
+        const qCond = makeQuiz.parse(q) || {}
 
-        const rs = await EntryModel.find({
-          $and: [
-            ...(type ? [{ type }] : []),
-            ...(entries ? [{ entry: { $in: entries } }] : []),
-            dCond,
-            {
-              $or: [
-                { userId },
-                { sharedId: userId },
-                ...(all ? [{ userId: { $exists: false } }] : []),
+        const rs = await EntryModel.aggregate([
+          {
+            $match: {
+              $and: [
+                ...(type ? [{ type }] : []),
+                ...(entries ? [{ entry: { $in: entries } }] : []),
+                dCond,
+                {
+                  $or: [
+                    { userId },
+                    { sharedId: userId },
+                    ...(all ? [{ userId: { $exists: false } }] : []),
+                  ],
+                },
               ],
             },
-          ],
-        })
-          .sort('-updatedAt')
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .select({
-            entry: 1,
-            reading: 1,
-            english: 1,
-            type: 1,
-            source: 1,
-          })
-          .catch(() => [] as any[])
+          },
+          ...(Object.keys(qCond).length > 0
+            ? [
+                {
+                  $lookup: {
+                    from: 'Quiz',
+                    let: { entry: '$entry', type: '$type' },
+                    pipeline: [
+                      {
+                        $match: {
+                          $expr: {
+                            $and: [
+                              { $eq: ['$entry', '$$entry'] },
+                              { $eq: ['$type', '$$type'] },
+                            ],
+                          },
+                        },
+                      },
+                      {
+                        $match: qCond,
+                      },
+                    ],
+                    as: 'q',
+                  },
+                },
+                { $match: { 'q.0': { $exists: true } } },
+              ]
+            : []),
+          { $sort: { updatedAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          {
+            $project: {
+              entry: 1,
+              reading: 1,
+              english: 1,
+              type: 1,
+              source: 1,
+            },
+          },
+        ])
 
         const rMap: Record<
           'user' | 'wanikani' | 'others',

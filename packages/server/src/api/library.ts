@@ -1,5 +1,5 @@
 import { EntryModel, LibraryModel } from '@/db/mongo'
-import { QSplit } from '@/db/token'
+import { QSplit, qDateUndefined, qNumberUndefined } from '@/db/token'
 import { isHan } from '@/db/util'
 import { FastifyPluginAsync } from 'fastify'
 import { katakanaToHiragana, romajiToHiragana } from 'jskana'
@@ -251,6 +251,20 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
       ),
     })
 
+    const makeQuiz = new QSplit({
+      default: () => ({}),
+      fields: {
+        srsLevel: qNumberUndefined('srsLevel'),
+        nextReview: qDateUndefined('nextReview'),
+        lastRight: qDateUndefined('lastRight'),
+        lastWrong: qDateUndefined('lastWrong'),
+        maxRight: qNumberUndefined('maxRight'),
+        maxWrong: qNumberUndefined('maxWrong'),
+        rightStreak: qNumberUndefined('rightStreak'),
+        wrongStreak: qNumberUndefined('wrongStreak'),
+      },
+    })
+
     f.get<{
       Querystring: typeof sQuery.type
     }>(
@@ -325,6 +339,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
         })
 
         const dCond = makeJa.parse(q) || {}
+        const qCond = makeQuiz.parse(q) || {}
 
         const rs = await EntryModel.aggregate([
           {
@@ -336,6 +351,33 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
               ],
             },
           },
+          ...(Object.keys(qCond).length > 0
+            ? [
+                {
+                  $lookup: {
+                    from: 'Quiz',
+                    let: { entry: '$entry', type: '$type' },
+                    pipeline: [
+                      {
+                        $match: {
+                          $expr: {
+                            $and: [
+                              { $eq: ['$entry', '$$entry'] },
+                              { $eq: ['$type', '$$type'] },
+                            ],
+                          },
+                        },
+                      },
+                      {
+                        $match: qCond,
+                      },
+                    ],
+                    as: 'q',
+                  },
+                },
+                { $match: { 'q.0': { $exists: true } } },
+              ]
+            : []),
           {
             $lookup: {
               from: 'Library',

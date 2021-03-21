@@ -1,5 +1,6 @@
+import { kuromoji, kuroshiro } from '@/db/kuro'
 import { EntryModel, QuizModel } from '@/db/mongo'
-import { QSplit } from '@/db/token'
+import { QSplit, qDateUndefined, qNumberUndefined } from '@/db/token'
 import { FastifyPluginAsync } from 'fastify'
 import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
@@ -34,6 +35,45 @@ const quizRouter: FastifyPluginAsync = async (f) => {
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
+        }
+
+        const rDict = await EntryModel.find({
+          $and: [
+            { entry: { $in: entries }, type },
+            {
+              $or: [
+                { userId },
+                { userId: { $exists: false } },
+                { sharedId: userId },
+              ],
+            },
+          ],
+        })
+        const existingEntries = new Set(rDict.flatMap((r) => r.entry))
+        const newEntries = entries.filter((ent) => !existingEntries.has(ent))
+        if (newEntries.length) {
+          await EntryModel.insertMany(
+            await Promise.all(
+              newEntries.map(async (entry) => ({
+                userId,
+                entry: [entry],
+                type,
+                segments:
+                  type === 'sentence'
+                    ? kuromoji
+                        .tokenize(entry)
+                        .map(
+                          (t) => t.basic_form.replace('*', '') || t.surface_form
+                        )
+                        .filter((s) =>
+                          /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u.test(s)
+                        )
+                        .filter((a, i, r) => r.indexOf(a) === i)
+                    : [],
+                reading: [await kuroshiro.convert(entry)],
+              }))
+            )
+          )
         }
 
         const r = await QuizModel.insertMany(
@@ -251,6 +291,22 @@ const quizRouter: FastifyPluginAsync = async (f) => {
 
         const now = new Date()
 
+        const makeQuiz = new QSplit({
+          default: () => ({}),
+          fields: {
+            srsLevel: qNumberUndefined('srsLevel'),
+            nextReview: qDateUndefined('nextReview'),
+            lastRight: qDateUndefined('lastRight'),
+            lastWrong: qDateUndefined('lastWrong'),
+            maxRight: qNumberUndefined('maxRight'),
+            maxWrong: qNumberUndefined('maxWrong'),
+            rightStreak: qNumberUndefined('rightStreak'),
+            wrongStreak: qNumberUndefined('wrongStreak'),
+          },
+        })
+
+        const qCond = makeQuiz.parse(q)
+
         const makeJa = new QSplit({
           default: (v) => {
             return {
@@ -333,6 +389,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
                     $and: [
                       { userId, direction: { $in: dirs } },
                       ...(srsOr.length === 0 ? [] : [{ $or: srsOr }]),
+                      ...(qCond ? [qCond] : []),
                     ],
                   },
                 },

@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 type Query = Record<string, unknown>
 
 export class QSplit {
@@ -153,5 +155,103 @@ export class QSplit {
     tokenStack.flush()
 
     return tokenStack.data.map((s) => s.trim()).filter((s) => s)
+  }
+}
+
+export function qNumberUndefined(
+  k: string
+): {
+  [op: string]: (v: string) => Query
+} {
+  return {
+    ':': (v) =>
+      v === 'NULL' ? { [k]: { $exists: false } } : { [k]: parseInt(v) },
+    '>': (v) => ({ [k]: { $gt: parseInt(v) } }),
+    '<': (v) => ({ [k]: { $lt: parseInt(v) } }),
+  }
+}
+
+function parseDate(v: string): { d: dayjs.Dayjs; u: dayjs.OpUnitType } | null {
+  {
+    const [, ns = '', us] = /^([-+]?\d(?:[.]\d+)?)([A-Z]{1,8})$/.exec(v) || []
+    if (us) {
+      const n = parseFloat(ns)
+      const u = us as dayjs.OpUnitType
+      const d = dayjs().add(n, u as dayjs.OpUnitType)
+      if (d.isValid()) {
+        return { d, u }
+      }
+    }
+  }
+
+  {
+    const [, hs = '', ms] = /^\d{2}:\d{2}$/.exec(v) || []
+    if (ms) {
+      const h = parseInt(hs)
+      const min = parseInt(ms)
+
+      if (h >= 0 && h <= 24 && min >= 0 && min < 60) {
+        const d = dayjs().set('h', h).set('minute', min)
+        if (d.isValid()) {
+          return { d, u: 'hour' }
+        }
+      }
+    }
+  }
+
+  {
+    if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
+      const d = dayjs(v)
+      if (d.isValid()) {
+        return { d, u: 'day' }
+      }
+    }
+  }
+
+  return null
+}
+
+export function qDateUndefined(
+  k: string
+): {
+  [op: string]: (v: string) => Query
+} {
+  return {
+    ':': (v) =>
+      v === 'NULL'
+        ? { [k]: { $exists: false } }
+        : (() => {
+            const d = parseDate(v)
+            if (!d) {
+              return { [Math.random()]: 1 }
+            }
+
+            return {
+              $and: [
+                {
+                  [k]: {
+                    $gt: d.d.subtract(0.5, d.u).toDate(),
+                    $lt: d.d.add(0.5, d.u).toDate(),
+                  },
+                },
+              ],
+            }
+          })(),
+    '>': (v) => {
+      const d = parseDate(v)
+      if (!d) {
+        return { [Math.random()]: 1 }
+      }
+
+      return { [k]: { $gt: d.d.toDate() } }
+    },
+    '<': (v) => {
+      const d = parseDate(v)
+      if (!d) {
+        return { [Math.random()]: 1 }
+      }
+
+      return { [k]: { $gt: d.d.toDate() } }
+    },
   }
 }
