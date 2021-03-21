@@ -20,16 +20,21 @@ async function main() {
       json_extract([data], '$.readings') readings,
       json_extract([data], '$.pronunciation_audios') audio
     FROM subjects
+    WHERE [type] IN ('kanji', 'vocabulary')
     `
     )
     .all()
 
-  const fMap: Record<string, number> = await axios
-    .post(
-      'http://localhost:8000/wordfreq?lang=ja',
-      items.map((it) => it.characters)
-    )
+  const fMap: Record<
+    string,
+    number
+  > = await axios
+    .post('http://localhost:8000/wordfreq?lang=ja', [
+      ...new Set(items.map((it) => it.characters)),
+    ])
     .then((r) => r.data)
+
+  await EntryModel.deleteMany({ source: 'wanikani' })
 
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
@@ -61,7 +66,7 @@ async function main() {
             return out
           }),
           english: JSON.parse(it.meanings).map((r: any) => r.meaning),
-          type: it.type,
+          type: it.type === 'kanji' ? 'character' : 'vocabulary',
           level: it.level,
           source: 'wanikani',
           audio: (JSON.parse(it.audio || '[]') as any[]).reduce((prev, c) => {

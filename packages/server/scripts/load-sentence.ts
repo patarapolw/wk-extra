@@ -36,6 +36,11 @@ async function main() {
       return it.ja
     })
 
+  await EntryModel.deleteMany({
+    type: 'sentence',
+    source: 'wanikani',
+  })
+
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
@@ -45,7 +50,7 @@ async function main() {
           it.vocab,
           ...kuromoji
             .tokenize(it.ja)
-            .map((t) => t.basic_form || t.surface_form)
+            .map((t) => t.basic_form.replace('*', '') || t.surface_form)
             .filter((s) => re.test(s)),
         ].filter((a, i, r) => r.indexOf(a) === i)
 

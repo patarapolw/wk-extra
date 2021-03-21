@@ -1,3 +1,4 @@
+import { kuromoji } from '@/db/kuro'
 import { EntryModel } from '@/db/mongo'
 import { FastifyPluginAsync } from 'fastify'
 import S from 'jsonschema-definer'
@@ -44,7 +45,16 @@ const vocabularyRouter: FastifyPluginAsync = async (f) => {
           {
             $match: {
               $and: [
-                { segments: entry, type: 'sentence' },
+                {
+                  segments: {
+                    $in: kuromoji
+                      .tokenize(entry)
+                      .map(
+                        (r) => r.basic_form.replace('*', '') || r.surface_form
+                      ),
+                  },
+                  type: 'sentence',
+                },
                 {
                   $or: [
                     { userId },

@@ -59,7 +59,14 @@ export class QSplit {
       $and.push({ $nor: $not })
     }
 
-    return $and.length ? { $and } : null
+    switch ($and.length) {
+      case 0:
+        return null
+      case 1:
+        return $and[0]
+    }
+
+    return { $and }
   }
 
   /**

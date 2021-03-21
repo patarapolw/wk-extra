@@ -54,8 +54,6 @@ class Entry {
   @prop({
     index: true,
     default: () => [],
-    validate: (it: string[]) =>
-      Array.isArray(it) && it.every((el) => typeof el === 'string'),
   })
   sharedId?: string[]
 
@@ -81,10 +79,7 @@ class Entry {
   }[]
 
   @prop({
-    validate: (it: string[]) =>
-      Array.isArray(it) &&
-      it.length > 0 &&
-      it.every((el) => typeof el === 'string'),
+    default: () => [],
   })
   english!: string[]
 

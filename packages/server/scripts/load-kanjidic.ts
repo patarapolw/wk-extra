@@ -30,6 +30,8 @@ async function main() {
     )
     .then((r) => r.data)
 
+  await EntryModel.deleteMany({ source: 'kanjidic' })
+
   const chunkSize = 1000
   for (let i = 0; i < items.length; i += chunkSize) {
     console.log(i)
@@ -50,10 +52,13 @@ async function main() {
                 },
               ]
 
-              if (r.includes('.')) {
+              if (/[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu.test(r)) {
                 out.push({
                   type: 'kunyomi',
-                  kana: r.replace('.', ''),
+                  kana: r.replace(
+                    /[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu,
+                    ''
+                  ),
                   hidden: true,
                 })
               }
@@ -95,7 +100,7 @@ async function main() {
             }),
           ],
           english: JSON.parse(it.english).map((r: string) => r),
-          type: 'kanji',
+          type: 'character',
           source: 'kanjidic',
           frequency: fMap[it.kanji],
         }

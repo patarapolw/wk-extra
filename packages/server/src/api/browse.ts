@@ -47,7 +47,7 @@ const browseRouter: FastifyPluginAsync = async (f) => {
 
         const rDict = await EntryModel.find({
           $and: [
-            { entry, type },
+            { entry: { $in: entry.split(/,/g) }, type },
             {
               $or: [
                 { userId },
@@ -79,6 +79,7 @@ const browseRouter: FastifyPluginAsync = async (f) => {
               kana: string
             }[]
             english: string[]
+            source?: string
           }[]
         > = {
           user: [],
@@ -93,6 +94,7 @@ const browseRouter: FastifyPluginAsync = async (f) => {
               .filter((r) => !r.hidden)
               .map(({ type, kana }) => ({ type, kana })),
             english: d.english,
+            source: d.source,
           }
 
           switch (d.source) {
@@ -130,7 +132,7 @@ const browseRouter: FastifyPluginAsync = async (f) => {
         reading = reading.filter((a, i) => readingStr.indexOf(a.kana) === i)
 
         const english = result
-          .flatMap((r) => r.entry)
+          .flatMap((r) => r.english)
           .filter((a, i, r) => r.indexOf(a) === i)
 
         return {
@@ -163,6 +165,8 @@ const browseRouter: FastifyPluginAsync = async (f) => {
             })
           ),
           english: S.list(S.string()),
+          type: S.string(),
+          source: S.string().optional(),
         })
       ),
     })
@@ -198,51 +202,6 @@ const browseRouter: FastifyPluginAsync = async (f) => {
       },
     })
 
-    const makeJa = new QSplit({
-      default: (v) => {
-        return {
-          $or: [
-            { entry: v },
-            { segments: v },
-            { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
-            { $text: { $search: v } },
-          ],
-        }
-      },
-      fields: {
-        entry: { ':': (v) => ({ $or: [{ entry: v }, { segments: v }] }) },
-        onyomi: {
-          ':': (v) => ({
-            reading: {
-              type: 'onyomi',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        kunyomi: {
-          ':': (v) => ({
-            reading: {
-              type: 'kunyomi',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        nanori: {
-          ':': (v) => ({
-            reading: {
-              type: 'nanori',
-              kana: katakanaToHiragana(romajiToHiragana(v)),
-            },
-          }),
-        },
-        reading: {
-          ':': (v) => ({ 'reading.kana': v }),
-        },
-        english: { ':': (v) => ({ $text: { $search: v } }) },
-        type: { ':': (v) => ({ type: v }) },
-      },
-    })
-
     f.get<{
       Querystring: typeof sQuery.type
     }>(
@@ -273,18 +232,16 @@ const browseRouter: FastifyPluginAsync = async (f) => {
 
         let entries: string[] | null = null
         if (type === 'character') {
-          const m = /(^| )\p{sc=Han}+( |$)/.exec(q)
+          const m = /(^| )\p{sc=Han}+( |$)/u.exec(q)
           if (m) {
-            q = q
-              .replace(m[1]!, ' ')
-              .replace(/(^| )type:character( |$)/, ' ')
-              .trim()
-            const rCond = makeRad.parse(m[1])
+            q = q.replace(m[1]!, ' ').trim()
+            const rCond = makeRad.parse(m[0])
 
             if (rCond) {
               entries = await RadicalModel.find(rCond)
                 .select('-_id entry')
                 .then((rs) => rs.map((r) => r.entry))
+
               if (!entries?.length) {
                 return { result: [] }
               }
@@ -292,10 +249,60 @@ const browseRouter: FastifyPluginAsync = async (f) => {
           }
         }
 
+        const makeJa = new QSplit({
+          default: (v) => {
+            if (entries) {
+              return {}
+            }
+
+            return {
+              $or: [
+                { entry: v },
+                { segments: v },
+                // { 'reading.kana': katakanaToHiragana(romajiToHiragana(v)) },
+                { $text: { $search: v } },
+              ],
+            }
+          },
+          fields: {
+            entry: { ':': (v) => ({ $or: [{ entry: v }, { segments: v }] }) },
+            onyomi: {
+              ':': (v) => ({
+                reading: {
+                  type: 'onyomi',
+                  kana: katakanaToHiragana(romajiToHiragana(v)),
+                },
+              }),
+            },
+            kunyomi: {
+              ':': (v) => ({
+                reading: {
+                  type: 'kunyomi',
+                  kana: katakanaToHiragana(romajiToHiragana(v)),
+                },
+              }),
+            },
+            nanori: {
+              ':': (v) => ({
+                reading: {
+                  type: 'nanori',
+                  kana: katakanaToHiragana(romajiToHiragana(v)),
+                },
+              }),
+            },
+            reading: {
+              ':': (v) => ({ 'reading.kana': v }),
+            },
+            english: { ':': (v) => ({ $text: { $search: v } }) },
+            type: { ':': (v) => ({ type: v }) },
+          },
+        })
+
         const dCond = makeJa.parse(q) || {}
 
         const rs = await EntryModel.find({
           $and: [
+            ...(type ? [{ type }] : []),
             ...(entries ? [{ entry: { $in: entries } }] : []),
             dCond,
             {
@@ -315,11 +322,54 @@ const browseRouter: FastifyPluginAsync = async (f) => {
             entry: 1,
             reading: 1,
             english: 1,
+            type: 1,
             source: 1,
           })
+          .catch(() => [] as any[])
+
+        const rMap: Record<
+          'user' | 'wanikani' | 'others',
+          {
+            entry: string[]
+            reading: {
+              type?: string
+              kana: string
+            }[]
+            english: string[]
+            type: string
+            source?: string
+          }[]
+        > = {
+          user: [],
+          wanikani: [],
+          others: [],
+        }
+
+        rs.map((d) => {
+          const v = {
+            entry: d.entry,
+            reading: (d.reading as any[])
+              .filter((r) => !r.hidden)
+              .map(({ type, kana }) => ({ type, kana })),
+            english: d.english,
+            type: d.type,
+            source: d.source,
+          }
+
+          switch (d.source) {
+            case undefined:
+              rMap.user.push(v)
+              break
+            case 'wanikani':
+              rMap.user.push(v)
+              break
+            default:
+              rMap.others.push(v)
+          }
+        })
 
         return {
-          result: rs,
+          result: [...rMap.user, ...rMap.wanikani, ...rMap.others],
         }
       }
     )
@@ -343,6 +393,7 @@ const browseRouter: FastifyPluginAsync = async (f) => {
       {
         schema: {
           operationId: 'browseRandom',
+          querystring: sQuery.valueOf(),
           response: { 200: sResult.valueOf() },
         },
       },

@@ -7,7 +7,73 @@ import {
 } from 'openapi-client-axios'; 
 
 declare namespace Paths {
-  namespace CharacterGetOne {
+  namespace BrowseGetOne {
+    namespace Parameters {
+      export type Entry = string;
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      entry: Parameters.Entry;
+      type: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        entry: string;
+        alt: string[];
+        reading: {
+          type?: string;
+          kana: string;
+        }[];
+        english: string[];
+      }
+    }
+  }
+  namespace BrowseQuery {
+    namespace Parameters {
+      export type All = boolean;
+      export type Limit = number;
+      export type Page = number;
+      export type Q = string;
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      q: Parameters.Q;
+      page?: Parameters.Page;
+      limit?: Parameters.Limit;
+      all?: Parameters.All;
+      type?: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: {
+          entry: string[];
+          reading: {
+            type?: string;
+            kana: string;
+          }[];
+          english: string[];
+          type: string;
+          source?: string;
+        }[];
+      }
+    }
+  }
+  namespace BrowseRandom {
+    namespace Parameters {
+      export type Type = "character" | "vocabulary" | "sentence";
+    }
+    export interface QueryParameters {
+      type: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: string;
+        english: string;
+        level: number;
+      }
+    }
+  }
+  namespace CharacterRadical {
     namespace Parameters {
       export type Entry = string;
     }
@@ -19,102 +85,42 @@ declare namespace Paths {
         sub: string[];
         sup: string[];
         var: string[];
-        reading: {
-          type?: string;
-          kana: string;
-        }[];
-        english: string[];
       }
     }
   }
-  namespace CharacterQuery {
-    namespace Parameters {
-      export type Limit = number;
-      export type Q = string;
-    }
-    export interface QueryParameters {
-      q: Parameters.Q;
-      limit?: Parameters.Limit;
-    }
-    namespace Responses {
-      export interface $200 {
-        result: string[];
-      }
-    }
-  }
-  namespace CharacterRandom {
-    namespace Responses {
-      export interface $200 {
-        result: string;
-        english: string;
-        level: number;
-      }
-    }
-  }
-  namespace ExtraQuery {
-    namespace Parameters {
-      export type Limit = number;
-      export type Page = number;
-      export type Q = string;
-    }
-    export interface QueryParameters {
-      q: Parameters.Q;
-      page?: Parameters.Page;
-      limit?: Parameters.Limit;
-    }
-    namespace Responses {
-      export interface $200 {
-        result: {
-          entry: string[];
-          reading: {
-            type?: string;
-            kana: string;
-          }[];
-          english: string[];
-        }[];
-      }
-    }
-  }
-  namespace SentenceGetOne {
+  namespace CharacterSentence {
     namespace Parameters {
       export type Entry = string;
+      export type Limit = number;
+      export type Page = number;
     }
     export interface QueryParameters {
       entry: Parameters.Entry;
-    }
-    namespace Responses {
-      export interface $200 {
-        ja: string;
-        en: string;
-      }
-    }
-  }
-  namespace SentenceQuery {
-    namespace Parameters {
-      export type Limit = number;
-      export type Page = number;
-      export type Q = string;
-    }
-    export interface QueryParameters {
-      q?: Parameters.Q;
       limit?: Parameters.Limit;
-      page?: Parameters.Page;
     }
     namespace Responses {
       export interface $200 {
         result: {
-          ja: string;
-          en: string;
+          entry: string;
+          english: string;
         }[];
       }
     }
   }
-  namespace SentenceRandom {
+  namespace CharacterVocabulary {
+    namespace Parameters {
+      export type Entry = string;
+      export type Limit = number;
+    }
+    export interface QueryParameters {
+      entry: Parameters.Entry;
+      limit?: Parameters.Limit;
+    }
     namespace Responses {
       export interface $200 {
-        result: string;
-        english: string;
-        level: number;
+        result: {
+          entry: string;
+        }[];
       }
     }
   }
@@ -155,55 +161,6 @@ declare namespace Paths {
       }
     }
   }
-  namespace VocabularyGetOne {
-    namespace Parameters {
-      export type Entry = string;
-    }
-    export interface QueryParameters {
-      entry: Parameters.Entry;
-    }
-    namespace Responses {
-      export interface $200 {
-        entry: string[];
-        reading: {
-          type?: string;
-          kana: string;
-        }[];
-        english: string[];
-      }
-    }
-  }
-  namespace VocabularyQuery {
-    namespace Parameters {
-      export type Limit = number;
-      export type Q = string;
-    }
-    export interface QueryParameters {
-      q: Parameters.Q;
-      limit?: Parameters.Limit;
-    }
-    namespace Responses {
-      export interface $200 {
-        result: {
-          entry: string[];
-          reading: {
-            type?: string;
-            kana: string;
-          }[];
-          english: string[];
-        }[];
-      }
-    }
-  }
-  namespace VocabularyRandom {
-    namespace Responses {
-      export interface $200 {
-        result: string;
-        english: string;
-        level: number;
-      }
-    }
-  }
 }
 
 export interface OperationMethods {
@@ -216,61 +173,53 @@ export interface OperationMethods {
     config?: AxiosRequestConfig  
   ): OperationResponse<any>
   /**
-   * characterGetOne
+   * browseGetOne
    */
-  'characterGetOne'(
-    parameters?: Parameters<Paths.CharacterGetOne.QueryParameters> | null,
+  'browseGetOne'(
+    parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.CharacterGetOne.Responses.$200>
+  ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
   /**
-   * characterQuery
+   * browseQuery
    */
-  'characterQuery'(
-    parameters?: Parameters<Paths.CharacterQuery.QueryParameters> | null,
+  'browseQuery'(
+    parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.CharacterQuery.Responses.$200>
+  ): OperationResponse<Paths.BrowseQuery.Responses.$200>
   /**
-   * characterRandom
+   * browseRandom
    */
-  'characterRandom'(
-    parameters?: Parameters<UnknownParamsObject> | null,
+  'browseRandom'(
+    parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.CharacterRandom.Responses.$200>
+  ): OperationResponse<Paths.BrowseRandom.Responses.$200>
   /**
-   * extraQuery
+   * characterRadical
    */
-  'extraQuery'(
-    parameters?: Parameters<Paths.ExtraQuery.QueryParameters> | null,
+  'characterRadical'(
+    parameters?: Parameters<Paths.CharacterRadical.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.ExtraQuery.Responses.$200>
+  ): OperationResponse<Paths.CharacterRadical.Responses.$200>
   /**
-   * sentenceGetOne
+   * characterVocabulary
    */
-  'sentenceGetOne'(
-    parameters?: Parameters<Paths.SentenceGetOne.QueryParameters> | null,
+  'characterVocabulary'(
+    parameters?: Parameters<Paths.CharacterVocabulary.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.SentenceGetOne.Responses.$200>
+  ): OperationResponse<Paths.CharacterVocabulary.Responses.$200>
   /**
-   * sentenceQuery
+   * characterSentence
    */
-  'sentenceQuery'(
-    parameters?: Parameters<Paths.SentenceQuery.QueryParameters> | null,
+  'characterSentence'(
+    parameters?: Parameters<Paths.CharacterSentence.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.SentenceQuery.Responses.$200>
-  /**
-   * sentenceRandom
-   */
-  'sentenceRandom'(
-    parameters?: Parameters<UnknownParamsObject> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.SentenceRandom.Responses.$200>
+  ): OperationResponse<Paths.CharacterSentence.Responses.$200>
   /**
    * utilTokenize
    */
@@ -296,29 +245,13 @@ export interface OperationMethods {
     config?: AxiosRequestConfig  
   ): OperationResponse<any>
   /**
-   * vocabularyGetOne
+   * characterSentence
    */
-  'vocabularyGetOne'(
-    parameters?: Parameters<Paths.VocabularyGetOne.QueryParameters> | null,
+  'characterSentence'(
+    parameters?: Parameters<Paths.CharacterSentence.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.VocabularyGetOne.Responses.$200>
-  /**
-   * vocabularyQuery
-   */
-  'vocabularyQuery'(
-    parameters?: Parameters<Paths.VocabularyQuery.QueryParameters> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.VocabularyQuery.Responses.$200>
-  /**
-   * vocabularyRandom
-   */
-  'vocabularyRandom'(
-    parameters?: Parameters<UnknownParamsObject> | null,
-    data?: any,
-    config?: AxiosRequestConfig  
-  ): OperationResponse<Paths.VocabularyRandom.Responses.$200>
+  ): OperationResponse<Paths.CharacterSentence.Responses.$200>
 }
 
 export interface PathsDictionary {
@@ -332,75 +265,65 @@ export interface PathsDictionary {
       config?: AxiosRequestConfig  
     ): OperationResponse<any>
   }
-  ['/api/character/']: {
+  ['/api/browse/']: {
     /**
-     * characterGetOne
+     * browseGetOne
      */
     'get'(
-      parameters?: Parameters<Paths.CharacterGetOne.QueryParameters> | null,
+      parameters?: Parameters<Paths.BrowseGetOne.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.CharacterGetOne.Responses.$200>
+    ): OperationResponse<Paths.BrowseGetOne.Responses.$200>
   }
-  ['/api/character/q']: {
+  ['/api/browse/q']: {
     /**
-     * characterQuery
+     * browseQuery
      */
     'get'(
-      parameters?: Parameters<Paths.CharacterQuery.QueryParameters> | null,
+      parameters?: Parameters<Paths.BrowseQuery.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.CharacterQuery.Responses.$200>
+    ): OperationResponse<Paths.BrowseQuery.Responses.$200>
   }
-  ['/api/character/random']: {
+  ['/api/browse/random']: {
     /**
-     * characterRandom
+     * browseRandom
      */
     'get'(
-      parameters?: Parameters<UnknownParamsObject> | null,
+      parameters?: Parameters<Paths.BrowseRandom.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.CharacterRandom.Responses.$200>
+    ): OperationResponse<Paths.BrowseRandom.Responses.$200>
   }
-  ['/api/extra/q']: {
+  ['/api/character/radical']: {
     /**
-     * extraQuery
+     * characterRadical
      */
     'get'(
-      parameters?: Parameters<Paths.ExtraQuery.QueryParameters> | null,
+      parameters?: Parameters<Paths.CharacterRadical.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.ExtraQuery.Responses.$200>
+    ): OperationResponse<Paths.CharacterRadical.Responses.$200>
   }
-  ['/api/sentence/']: {
+  ['/api/character/vocabulary']: {
     /**
-     * sentenceGetOne
+     * characterVocabulary
      */
     'get'(
-      parameters?: Parameters<Paths.SentenceGetOne.QueryParameters> | null,
+      parameters?: Parameters<Paths.CharacterVocabulary.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.SentenceGetOne.Responses.$200>
+    ): OperationResponse<Paths.CharacterVocabulary.Responses.$200>
   }
-  ['/api/sentence/q']: {
+  ['/api/character/sentence']: {
     /**
-     * sentenceQuery
+     * characterSentence
      */
     'get'(
-      parameters?: Parameters<Paths.SentenceQuery.QueryParameters> | null,
+      parameters?: Parameters<Paths.CharacterSentence.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.SentenceQuery.Responses.$200>
-  }
-  ['/api/sentence/random']: {
-    /**
-     * sentenceRandom
-     */
-    'get'(
-      parameters?: Parameters<UnknownParamsObject> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.SentenceRandom.Responses.$200>
+    ): OperationResponse<Paths.CharacterSentence.Responses.$200>
   }
   ['/api/util/tokenize']: {
     /**
@@ -432,35 +355,15 @@ export interface PathsDictionary {
       config?: AxiosRequestConfig  
     ): OperationResponse<any>
   }
-  ['/api/vocabulary/']: {
+  ['/api/vocabulary/sentence']: {
     /**
-     * vocabularyGetOne
+     * characterSentence
      */
     'get'(
-      parameters?: Parameters<Paths.VocabularyGetOne.QueryParameters> | null,
+      parameters?: Parameters<Paths.CharacterSentence.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.VocabularyGetOne.Responses.$200>
-  }
-  ['/api/vocabulary/q']: {
-    /**
-     * vocabularyQuery
-     */
-    'get'(
-      parameters?: Parameters<Paths.VocabularyQuery.QueryParameters> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.VocabularyQuery.Responses.$200>
-  }
-  ['/api/vocabulary/random']: {
-    /**
-     * vocabularyRandom
-     */
-    'get'(
-      parameters?: Parameters<UnknownParamsObject> | null,
-      data?: any,
-      config?: AxiosRequestConfig  
-    ): OperationResponse<Paths.VocabularyRandom.Responses.$200>
+    ): OperationResponse<Paths.CharacterSentence.Responses.$200>
   }
 }
 
