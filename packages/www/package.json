@@ -11,7 +11,12 @@
     "openapi": "wget http://127.0.0.1:18797/api/doc/json -O ./assets/openapi.json && typegen ./assets/openapi.json > ./types/openapi.d.ts"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.34",
+    "@fortawesome/free-brands-svg-icons": "^5.15.2",
+    "@fortawesome/free-solid-svg-icons": "^5.15.2",
+    "@nuxtjs/fontawesome": "^1.1.2",
     "@nuxtjs/proxy": "^2.1.0",
+    "@nuxtjs/pwa": "^3.3.5",
     "axios": "^0.21.1",
     "core-js": "^3.9.1",
     "lokijs": "^1.5.11",
