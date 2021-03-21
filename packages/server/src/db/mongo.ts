@@ -47,7 +47,7 @@ export const UserModel = getModelForClass(User, {
 
 @index({ english: 'text', description: 'text' })
 class Entry {
-  @prop({ default: () => nanoid() }) _id!: string
+  @prop({ default: () => nanoid() }) _id?: string
 
   @prop({ index: true }) userId?: string
 
@@ -73,7 +73,7 @@ class Entry {
   segments!: string[]
 
   @prop({ index: true, default: () => [] }) reading!: {
-    type?: 'kunyomi' | 'onyomi' | 'nanori'
+    type?: string // 'kunyomi' | 'onyomi' | 'nanori'
     kana: string
     hidden?: boolean
   }[]

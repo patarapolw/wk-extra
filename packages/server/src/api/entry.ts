@@ -1,3 +1,4 @@
+import { kuromoji, kuroshiro } from '@/db/kuro'
 import { EntryModel, RadicalModel, UserModel } from '@/db/mongo'
 import { QSplit } from '@/db/token'
 import { isHan } from '@/db/util'
@@ -6,6 +7,348 @@ import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
 
 const entryRouter: FastifyPluginAsync = async (f) => {
+  {
+    const sQuery = S.shape({
+      id: S.string(),
+    })
+
+    const sResult = S.shape({
+      entry: S.string(),
+      alt: S.list(S.string()),
+      reading: S.list(
+        S.shape({
+          type: S.string().optional(),
+          kana: S.string(),
+        })
+      ),
+      english: S.list(S.string()),
+      audio: S.list(S.string()),
+      type: S.string(),
+      description: S.string(),
+      tag: S.list(S.string()),
+    })
+
+    f.get<{
+      Querystring: typeof sQuery.type
+    }>(
+      '/id',
+      {
+        schema: {
+          operationId: 'entryGetById',
+          querystring: sQuery.valueOf(),
+          response: {
+            200: sResult.valueOf(),
+          },
+        },
+      },
+      async (req): Promise<typeof sResult.type> => {
+        const { id } = req.query
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        const r = await EntryModel.findOne({
+          _id: id,
+          userId,
+        })
+
+        if (!r) {
+          throw { statusCode: 404 }
+        }
+
+        return {
+          entry: r.entry[0]!,
+          alt: r.entry.slice(1),
+          reading: r.reading,
+          english: r.english,
+          type: r.type,
+          audio: Object.values(r.audio || {}),
+          description: r.description,
+          tag: r.tag,
+        }
+      }
+    )
+  }
+
+  {
+    const sResponse = S.shape({
+      id: S.string(),
+    })
+
+    const sBody = S.shape({
+      entry: S.string(),
+      alt: S.list(S.string()),
+      reading: S.list(
+        S.shape({
+          type: S.string().optional(),
+          kana: S.string(),
+        })
+      ),
+      english: S.list(S.string()),
+      audio: S.list(S.string()),
+      type: S.string().enum('character', 'vocabulary', 'sentence'),
+      description: S.string(),
+      tag: S.list(S.string()),
+    })
+
+    f.put<{
+      Body: typeof sBody.type
+    }>(
+      '/',
+      {
+        schema: {
+          operationId: 'entryCreate',
+          body: sBody.valueOf(),
+          response: {
+            200: sResponse.valueOf(),
+          },
+        },
+      },
+      async (req, reply): Promise<typeof sResponse.type> => {
+        const {
+          entry,
+          alt,
+          reading: _reading,
+          english,
+          type,
+          description,
+          tag,
+          audio,
+        } = req.body
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        let segments: string[] = []
+        if (type === 'sentence') {
+          segments = kuromoji
+            .tokenize([entry, ...alt].join(' '))
+            .map((t) => t.basic_form.replace('*', '') || t.surface_form)
+            .filter((s) =>
+              /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u.test(s)
+            )
+            .filter((a, i, r) => r.indexOf(a) === i)
+        }
+
+        const reading = _reading as {
+          type?: string
+          kana: string
+          hidden?: boolean
+        }[]
+        if (!reading.length) {
+          reading.push({ kana: await kuroshiro.convert(entry) })
+        } else {
+          reading.map((r) => {
+            if (
+              /[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu.test(r.kana) ||
+              /\p{sc=Katakana}/u.test(r.kana)
+            ) {
+              reading.push({
+                ...r,
+                kana: katakanaToHiragana(
+                  r.kana.replace(
+                    /[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu,
+                    ''
+                  )
+                ),
+                hidden: true,
+              })
+            }
+          })
+        }
+
+        const r = await EntryModel.create({
+          userId,
+          entry: [entry, ...alt],
+          segments,
+          reading,
+          english,
+          type,
+          description,
+          tag,
+          audio: Object.fromEntries(audio.map((a, i) => [i.toString(), a])),
+        })
+
+        reply.status(201)
+        return {
+          id: r._id,
+        }
+      }
+    )
+  }
+
+  {
+    const sQuery = S.shape({
+      id: S.string(),
+    })
+
+    const sBody = S.shape({
+      entry: S.string(),
+      alt: S.list(S.string()),
+      reading: S.list(
+        S.shape({
+          type: S.string().optional(),
+          kana: S.string(),
+        })
+      ),
+      english: S.list(S.string()),
+      audio: S.list(S.string()),
+      type: S.string().enum('character', 'vocabulary', 'sentence'),
+      description: S.string(),
+      tag: S.list(S.string()),
+    })
+
+    const sResponse = S.shape({
+      result: S.string(),
+    })
+
+    f.patch<{
+      Querystring: typeof sQuery.type
+      Body: typeof sBody.type
+    }>(
+      '/',
+      {
+        schema: {
+          operationId: 'entryUpdate',
+          querystring: sQuery.valueOf(),
+          body: sBody.valueOf(),
+          response: {
+            200: sResponse.valueOf(),
+          },
+        },
+      },
+      async (req, reply): Promise<typeof sResponse.type> => {
+        const { id } = req.query
+        const {
+          entry,
+          alt,
+          reading: _reading,
+          english,
+          type,
+          description,
+          tag,
+          audio,
+        } = req.body
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        let segments: string[] = []
+        if (type === 'sentence') {
+          segments = kuromoji
+            .tokenize([entry, ...alt].join(' '))
+            .map((t) => t.basic_form.replace('*', '') || t.surface_form)
+            .filter((s) =>
+              /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u.test(s)
+            )
+            .filter((a, i, r) => r.indexOf(a) === i)
+        }
+
+        const reading = _reading as {
+          type?: string
+          kana: string
+          hidden?: boolean
+        }[]
+        reading.map((r) => {
+          if (
+            /[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu.test(r.kana) ||
+            /\p{sc=Katakana}/u.test(r.kana)
+          ) {
+            reading.push({
+              ...r,
+              kana: katakanaToHiragana(
+                r.kana.replace(
+                  /[^\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/gu,
+                  ''
+                )
+              ),
+              hidden: true,
+            })
+          }
+        })
+
+        const r = await EntryModel.findOneAndUpdate(
+          {
+            _id: id,
+            userId,
+          },
+          {
+            entry: [entry, ...alt],
+            segments,
+            english,
+            type,
+            description,
+            tag,
+            audio: Object.fromEntries(audio.map((a, i) => [i.toString(), a])),
+            ...(reading.length ? { reading } : {}),
+          }
+        )
+
+        if (!r) {
+          throw { statusCode: 404 }
+        }
+
+        reply.status(201)
+        return {
+          result: 'updated',
+        }
+      }
+    )
+  }
+
+  {
+    const sQuery = S.shape({
+      id: S.string(),
+    })
+
+    const sResponse = S.shape({
+      result: S.string(),
+    })
+
+    f.delete<{
+      Querystring: typeof sQuery.type
+    }>(
+      '/',
+      {
+        schema: {
+          operationId: 'entryDelete',
+          querystring: sQuery.valueOf(),
+          response: {
+            200: sResponse.valueOf(),
+          },
+        },
+      },
+      async (req, reply): Promise<typeof sResponse.type> => {
+        const { id } = req.query
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        const r = await EntryModel.findByIdAndDelete({
+          _id: id,
+          userId,
+        })
+
+        if (!r) {
+          throw { statusCode: 404 }
+        }
+
+        reply.status(201)
+        return {
+          result: 'deleted',
+        }
+      }
+    )
+  }
+
   {
     const sQuery = S.shape({
       entry: S.string(),
@@ -27,10 +370,10 @@ const entryRouter: FastifyPluginAsync = async (f) => {
     f.get<{
       Querystring: typeof sQuery.type
     }>(
-      '/',
+      '/entry',
       {
         schema: {
-          operationId: 'browseGetOne',
+          operationId: 'entryGetByEntry',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -208,7 +551,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
       '/q',
       {
         schema: {
-          operationId: 'browseQuery',
+          operationId: 'entryQuery',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),
@@ -392,7 +735,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
       '/random',
       {
         schema: {
-          operationId: 'browseRandom',
+          operationId: 'entryRandom',
           querystring: sQuery.valueOf(),
           response: { 200: sResult.valueOf() },
         },
