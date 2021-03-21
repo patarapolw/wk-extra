@@ -340,12 +340,12 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
-        const r = await EntryModel.findByIdAndDelete({
-          _id: id,
+        const r = await EntryModel.deleteMany({
           userId,
+          _id: { $in: id.split(/,/g) },
         })
 
-        if (!r) {
+        if (!r.deletedCount) {
           throw { statusCode: 404 }
         }
 

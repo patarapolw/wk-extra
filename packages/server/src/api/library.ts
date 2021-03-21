@@ -216,12 +216,12 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
-        const r = await LibraryModel.findByIdAndDelete({
-          _id: id,
+        const r = await LibraryModel.deleteMany({
           userId,
+          _id: { $in: id.split(/,/g) },
         })
 
-        if (!r) {
+        if (!r.deletedCount) {
           throw { statusCode: 404 }
         }
 

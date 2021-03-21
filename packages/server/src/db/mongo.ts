@@ -109,8 +109,8 @@ class Quiz {
     validate: (v: string) =>
       ['character', 'vocabulary', 'sentence'].includes(v),
   })
-  type!: 'character' | 'vocabulary' | 'sentence'
-  @prop({ required: true }) direction!: 'je' | 'ej'
+  type!: string // 'character' | 'vocabulary' | 'sentence'
+  @prop({ required: true }) direction!: string // 'je' | 'ej'
 
   @prop({ index: true }) srsLevel?: number
   @prop({ index: true }) nextReview?: Date
