@@ -82,7 +82,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           operationId: 'libraryCreate',
           body: sBody.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -143,7 +143,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           querystring: sQuery.valueOf(),
           body: sBody.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -204,7 +204,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           operationId: 'libraryDelete',
           querystring: sQuery.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -216,9 +216,9 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
-        const r = await LibraryModel.deleteMany({
+        const r = await LibraryModel.deleteOne({
           userId,
-          _id: { $in: id.split(/,/g) },
+          _id: id,
         })
 
         if (!r.deletedCount) {
@@ -271,7 +271,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
       '/q',
       {
         schema: {
-          operationId: 'libraryEntry',
+          operationId: 'libraryQuery',
           querystring: sQuery.valueOf(),
           response: {
             200: sResult.valueOf(),

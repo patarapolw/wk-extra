@@ -1,6 +1,7 @@
 import { kuromoji, kuroshiro } from '@/db/kuro'
 import { EntryModel, QuizModel } from '@/db/mongo'
 import { QSplit, qDateUndefined, qNumberUndefined } from '@/db/token'
+import arrayShuffle from 'array-shuffle'
 import { FastifyPluginAsync } from 'fastify'
 import { katakanaToHiragana, romajiToHiragana } from 'jskana'
 import S from 'jsonschema-definer'
@@ -12,8 +13,19 @@ const quizRouter: FastifyPluginAsync = async (f) => {
     })
 
     const sBody = S.shape({
-      entry: S.list(S.string()).minItems(1),
+      entry: S.list(
+        S.anyOf(
+          S.string(),
+          S.shape({
+            entry: S.string(),
+            alt: S.list(S.string()).optional(),
+            reading: S.list(S.string()).optional(),
+            english: S.list(S.string()).optional(),
+          })
+        )
+      ).minItems(1),
       type: S.string(),
+      description: S.string().optional(),
     })
 
     f.put<{
@@ -30,12 +42,16 @@ const quizRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req, reply): Promise<typeof sResponse.type> => {
-        const { entry: entries, type } = req.body
+        const { entry: _entries, type, description = '' } = req.body
 
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
         }
+
+        const entries = _entries.map((it) =>
+          typeof it === 'string' ? it : it.entry
+        )
 
         const rDict = await EntryModel.find({
           $and: [
@@ -50,28 +66,40 @@ const quizRouter: FastifyPluginAsync = async (f) => {
           ],
         })
         const existingEntries = new Set(rDict.flatMap((r) => r.entry))
-        const newEntries = entries.filter((ent) => !existingEntries.has(ent))
+        const newEntries = _entries.filter(
+          (it) => !existingEntries.has(typeof it === 'string' ? it : it.entry)
+        )
         if (newEntries.length) {
           await EntryModel.insertMany(
             await Promise.all(
-              newEntries.map(async (entry) => ({
-                userId,
-                entry: [entry],
-                type,
-                segments:
-                  type === 'sentence'
-                    ? kuromoji
-                        .tokenize(entry)
-                        .map(
-                          (t) => t.basic_form.replace('*', '') || t.surface_form
-                        )
-                        .filter((s) =>
-                          /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u.test(s)
-                        )
-                        .filter((a, i, r) => r.indexOf(a) === i)
-                    : [],
-                reading: [await kuroshiro.convert(entry)],
-              }))
+              newEntries.map(async (entry) => {
+                const el = typeof entry === 'string' ? { entry } : entry
+                return {
+                  userId,
+                  entry: [el.entry, ...(el.alt || [])],
+                  type,
+                  segments:
+                    type === 'sentence'
+                      ? kuromoji
+                          .tokenize(el.entry)
+                          .map(
+                            (t) =>
+                              t.basic_form.replace('*', '') || t.surface_form
+                          )
+                          .filter((s) =>
+                            /[\p{sc=Han}\p{sc=Katakana}\p{sc=Hiragana}]/u.test(
+                              s
+                            )
+                          )
+                          .filter((a, i, r) => r.indexOf(a) === i)
+                      : [],
+                  reading: el.reading?.length
+                    ? el.reading
+                    : [await kuroshiro.convert(el.entry)],
+                  english: el.english || [],
+                  description,
+                }
+              })
             )
           )
         }
@@ -85,7 +113,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
               direction,
             }))
           ),
-          { ordered: false }
+          { ordered: false, rawResult: true }
         ).catch((e) => e)
 
         console.log(r)
@@ -153,7 +181,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
     const sBody = S.shape({
       entry: S.list(S.string()).minItems(1),
       type: S.string(),
-      direction: S.list(S.string()),
+      direction: S.list(S.string()).minItems(1).optional(),
     })
 
     const sResponse = S.shape({
@@ -163,10 +191,10 @@ const quizRouter: FastifyPluginAsync = async (f) => {
     f.post<{
       Body: typeof sBody.type
     }>(
-      '/delete',
+      '/delete/entries',
       {
         schema: {
-          operationId: 'quizDelete',
+          operationId: 'quizDeleteByEntries',
           body: sBody.valueOf(),
           response: {
             201: sResponse.valueOf(),
@@ -174,7 +202,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req, reply): Promise<typeof sResponse.type> => {
-        const { entry: entries, type, direction: dirs = [] } = req.body
+        const { entry: entries, type, direction: dirs } = req.body
 
         const userId: string = req.session.get('userId')
         if (!userId) {
@@ -185,7 +213,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
           userId,
           type,
           entry: { $in: entries },
-          ...(dirs.length
+          ...(dirs
             ? {
                 direction: { $in: dirs },
               }
@@ -205,12 +233,12 @@ const quizRouter: FastifyPluginAsync = async (f) => {
   }
 
   {
-    const sQuery = S.shape({
+    const sBody = S.shape({
       q: S.string(),
-      type: S.string(),
-      direction: S.string(),
-      stage: S.string(),
-      includeUndue: S.boolean(),
+      type: S.list(S.string()),
+      direction: S.list(S.string()),
+      stage: S.list(S.string()),
+      include: S.list(S.string().enum('undue')),
     })
 
     const sResult = S.shape({
@@ -231,14 +259,14 @@ const quizRouter: FastifyPluginAsync = async (f) => {
       ),
     })
 
-    f.get<{
-      Querystring: typeof sQuery.type
+    f.post<{
+      Body: typeof sBody.type
     }>(
-      '/q',
+      '/get/init',
       {
         schema: {
-          operationId: 'quizQuery',
-          querystring: sQuery.valueOf(),
+          operationId: 'quizGetInit',
+          body: sBody.valueOf(),
           response: {
             200: sResult.valueOf(),
           },
@@ -246,19 +274,19 @@ const quizRouter: FastifyPluginAsync = async (f) => {
       },
       async (req): Promise<typeof sResult.type> => {
         const {
-          type: _types,
-          direction: _dirs,
-          stage: _stages,
-          includeUndue,
-        } = req.query
-        let { q = '' } = req.query
+          type: types,
+          direction: dirs,
+          stage: stages,
+          include,
+        } = req.body
+        let { q = '' } = req.body
 
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
         }
 
-        if (!_types || !_dirs || !_stages) {
+        if (!types.length || !dirs.length || !stages.length) {
           return {
             quiz: [],
             upcoming: [],
@@ -267,25 +295,21 @@ const quizRouter: FastifyPluginAsync = async (f) => {
 
         q = q.trim()
 
-        const types = _types.split(',')
-        const dirs = _dirs.split(',')
-        const stages = new Set(_stages.split(','))
-
         let srsOr: any[] = []
-        if (stages.has('new')) {
+        if (stages.includes('new')) {
           srsOr.push({ srsLevel: { $exists: false } })
         }
-        if (stages.has('learning')) {
+        if (stages.includes('learning')) {
           srsOr.push({ srsLevel: { $lte: 3 } })
         }
-        if (stages.has('graduate')) {
+        if (stages.includes('graduate')) {
           srsOr.push({ srsLevel: { $gt: 3 } })
         }
         if (srsOr.length === 3) {
           srsOr = []
         }
 
-        if (stages.has('leech')) {
+        if (stages.includes('leech')) {
           srsOr.push({ wrongStreak: { $gt: 2 } })
         }
 
@@ -462,7 +486,7 @@ const quizRouter: FastifyPluginAsync = async (f) => {
         }
 
         rs.map((r) => {
-          if (includeUndue) {
+          if (include.includes('undue')) {
             out.quiz.push(parseR(r))
             return
           }
@@ -475,7 +499,151 @@ const quizRouter: FastifyPluginAsync = async (f) => {
           }
         })
 
-        return out
+        return {
+          quiz: arrayShuffle(out.quiz),
+          upcoming: out.upcoming,
+        }
+      }
+    )
+  }
+
+  {
+    const sBody = S.shape({
+      entry: S.list(S.string()).minItems(1),
+      type: S.string(),
+      direction: S.list(S.string()).minItems(1).optional(),
+    })
+
+    const sResponse = S.shape({
+      result: S.list(
+        S.shape({
+          id: S.string(),
+          entry: S.string(),
+          type: S.string(),
+          direction: S.string(),
+        })
+      ),
+    })
+
+    f.post<{
+      Body: typeof sBody.type
+    }>(
+      '/get/entries',
+      {
+        schema: {
+          operationId: 'quizGetByEntries',
+          body: sBody.valueOf(),
+          response: {
+            200: sResponse.valueOf(),
+          },
+        },
+      },
+      async (req): Promise<typeof sResponse.type> => {
+        const { entry: entries, type, direction: dirs } = req.body
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        const result = await QuizModel.find({
+          $and: [
+            {
+              entry: { $in: entries },
+              type,
+              ...(dirs ? { direction: { $in: dirs } } : {}),
+            },
+            {
+              $or: [
+                { userId },
+                { userId: { $exists: false } },
+                { sharedId: userId },
+              ],
+            },
+          ],
+        }).select('_id entry type direction')
+
+        return {
+          result: result.map((r) => ({
+            id: r._id,
+            entry: r.entry,
+            type: r.type,
+            direction: r.direction,
+          })),
+        }
+      }
+    )
+  }
+
+  {
+    const sBody = S.shape({
+      entry: S.list(S.string()).minItems(1),
+      type: S.string(),
+    })
+
+    const sResponse = S.shape({
+      result: S.list(
+        S.shape({
+          entry: S.string(),
+          srsLevel: S.integer(),
+        })
+      ),
+    })
+
+    f.post<{
+      Body: typeof sBody.type
+    }>(
+      '/get/srsLevelByEntries',
+      {
+        schema: {
+          operationId: 'quizGetSrsLevelByEntries',
+          body: sBody.valueOf(),
+          response: {
+            200: sResponse.valueOf(),
+          },
+        },
+      },
+      async (req): Promise<typeof sResponse.type> => {
+        const { entry: entries, type } = req.body
+
+        const userId: string = req.session.get('userId')
+        if (!userId) {
+          throw { statusCode: 401 }
+        }
+
+        const result = await QuizModel.aggregate([
+          {
+            $match: {
+              $and: [
+                {
+                  entry: { $in: entries },
+                  type,
+                },
+                {
+                  $or: [
+                    { userId },
+                    { userId: { $exists: false } },
+                    { sharedId: userId },
+                  ],
+                },
+              ],
+            },
+          },
+          {
+            $group: {
+              _id: '$entry',
+              srsLevel: { $max: '$srsLevel' },
+            },
+          },
+          { $match: { srsLevel: { $exists: true } } },
+        ])
+
+        return {
+          result: result.map((r) => ({
+            entry: r._id,
+            srsLevel: r.srsLevel,
+          })),
+        }
       }
     )
   }

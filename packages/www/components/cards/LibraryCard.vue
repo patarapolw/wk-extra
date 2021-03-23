@@ -100,20 +100,14 @@ export default class LibraryCard extends Vue {
     if (entries.length > 0) {
       const {
         data: { result = [] },
-      } = await api.post<{
-        result: {
-          entry: string
-          srsLevel: number | null
-        }[]
-      }>('/api/quiz/srsLevel', {
-        entries,
-        type: 'vocab',
-        select: ['entry', 'srsLevel'],
+      } = await api.quizGetSrsLevelByEntries(null, {
+        entry: this.entries,
+        type: 'vocabulary',
       })
 
       // eslint-disable-next-line array-callback-return
       entries.map((entry) => {
-        delete this.srsLevel[entry]
+        this.srsLevel[entry] = -1
       })
 
       // eslint-disable-next-line array-callback-return

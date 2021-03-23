@@ -51,7 +51,11 @@ export async function findSentence(
   }
   findSentenceQueue.set(q, [])
 
-  const r = await api.sentenceQuery({ q, limit: generate })
+  const r = await api.entryQuery({
+    q,
+    type: 'sentence',
+    limit: generate,
+  })
 
   const oldSentence: string[] = []
   dbSentence.findAndUpdate({ words: { $contains: q } }, (obj) => {
@@ -61,11 +65,11 @@ export async function findSentence(
 
   const sentences = r.data.result
     .filter((s) => {
-      return !oldSentence.includes(s.ja)
+      return !oldSentence.includes(s.entry[0])
     })
     .map((s) => ({
-      ja: s.ja,
-      en: s.en,
+      ja: s.entry[0],
+      en: s.english[0],
       words: [q],
     }))
 

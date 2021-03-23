@@ -393,11 +393,13 @@ export default class QuizCard extends Vue {
     const id = this.quizArray[this.quizIndex] as string | undefined
 
     if (id) {
-      await api.patch('/api/quiz/mark', undefined, {
-        params: {
-          id,
-          type,
-        },
+      await api.quizDoLevel({
+        id,
+        d: {
+          right: 1,
+          wrong: -1,
+          repeat: 0,
+        }[type],
       })
     }
     this.initNextQuizItem()
@@ -498,43 +500,7 @@ export default class QuizCard extends Vue {
       return
     }
 
-    let q = this.quizData[quizId]
-    if (!q || !q.entry || !q.type || !q.direction) {
-      const {
-        data: {
-          result: [r],
-        },
-      } = await api.get<{
-        result: IQuizData[]
-      }>('/api/quiz/many', {
-        params: {
-          ids: [quizId],
-          select: [
-            'entry',
-            'type',
-            'source',
-            'direction',
-            'front',
-            'back',
-            'mnemonic',
-          ],
-        },
-      })
-
-      if (r) {
-        if (q) {
-          Object.assign(q, r)
-        } else {
-          q = r
-        }
-
-        q.id = quizId
-        q.type = q.type as IQuizType
-        q.entry = q.entry as string
-
-        this.$set(this.quizData, quizId, q)
-      }
-    }
+    const q = this.quizData[quizId]
 
     const type = q.type
     const entry = q.entry
@@ -544,92 +510,68 @@ export default class QuizCard extends Vue {
     }
 
     if (type === 'sentence') {
-      await api.sentenceGetOne({ entry }).then(({ data: r }) => {
-        const oldSentence = dbSentence.findOne({ ja: r.ja })
+      await api
+        .entryGetByEntry({
+          entry,
+          type: 'sentence',
+        })
+        .then(({ data: r }) => {
+          const oldSentence = dbSentence.findOne({ ja: r.entry })
 
-        if (!oldSentence) {
-          dbSentence.insert({
-            ja: r.ja,
-            en: r.en,
-            words: [],
-          })
-        }
-      })
+          if (!oldSentence) {
+            dbSentence.insert({
+              ja: r.entry,
+              en: r.english[0],
+              words: r.segments,
+            })
+          }
+        })
       return
     }
 
     if (!this.dictionaryData[type][entry]) {
       const setTemplate: {
-        [type in IQuizType]: () => Promise<void>
+        [type in Exclude<IQuizType, 'sentence'>]: () => Promise<void>
       } = {
         character: async () => {
           const {
-            data: { pinyin, english },
-          } = await api.get<{
-            pinyin: string
-            english: string
-          }>('/api/hanzi', {
-            params: {
-              entry,
-              select: 'pinyin,english',
-            },
+            data: { reading, english },
+          } = await api.entryGetByEntry({
+            entry,
+            type: 'character',
           })
 
           this.dictionaryData.character[entry] = {
-            pinyin,
+            reading,
             english,
           }
 
-          api.sentenceQuery({
-            q: entry,
-            limit: 5,
+          findSentence(entry, 5).then((r) => {
+            if (r) {
+              this.sentenceKey = Math.random()
+            }
           })
-
-          if (await findSentence(entry, 5)) {
-            this.sentenceKey = Math.random()
-          }
         },
         vocabulary: async () => {
-          const { traditional, pinyin, english } =
-            this.dictionaryData.vocabulary[entry] ||
-            (await api
-              .get<{
-                result: {
-                  traditional?: string
-                  pinyin: string
-                  english: string
-                }[]
-              }>('/api/vocab', {
-                params: {
-                  entry,
-                  select: 'traditional,pinyin,english',
-                },
-              })
-              .then(({ data: { result } }) => {
-                return {
-                  traditional: result
-                    .map(({ traditional }) => traditional || '')
-                    .filter((r) => r)
-                    .filter((a, i, arr) => arr.indexOf(a) === i),
-                  pinyin: result
-                    .map(({ pinyin }) => pinyin)
-                    .filter((a, i, arr) => arr.indexOf(a) === i),
-                  english: result.map(({ english }) => english),
-                }
-              }))
+          const {
+            data: { alt, reading, english },
+          } = await api.entryGetByEntry({
+            entry,
+            type: 'vocabulary',
+          })
 
           this.dictionaryData.vocabulary[entry] = {
-            traditional,
-            pinyin,
+            alt,
+            reading,
             english,
           }
 
-          if (await findSentence(entry, 5)) {
-            this.sentenceKey = Math.random()
-          }
+          findSentence(entry, 5).then((r) => {
+            if (r) {
+              this.sentenceKey = Math.random()
+            }
+          })
         },
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        sentence: async () => {},
       }
 
       await setTemplate[type]()

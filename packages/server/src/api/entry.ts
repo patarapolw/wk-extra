@@ -102,7 +102,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           operationId: 'entryCreate',
           body: sBody.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -221,7 +221,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           querystring: sQuery.valueOf(),
           body: sBody.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -328,7 +328,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           operationId: 'entryDelete',
           querystring: sQuery.valueOf(),
           response: {
-            200: sResponse.valueOf(),
+            201: sResponse.valueOf(),
           },
         },
       },
@@ -340,9 +340,9 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           throw { statusCode: 401 }
         }
 
-        const r = await EntryModel.deleteMany({
+        const r = await EntryModel.deleteOne({
           userId,
-          _id: { $in: id.split(/,/g) },
+          _id: id,
         })
 
         if (!r.deletedCount) {
@@ -373,6 +373,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         })
       ),
       english: S.list(S.string()),
+      segments: S.list(S.string()),
     })
 
     f.get<{
@@ -398,7 +399,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
 
         const rDict = await EntryModel.find({
           $and: [
-            { entry: { $in: entry.split(/,/g) }, type },
+            { entry, type },
             {
               $or: [
                 { userId },
@@ -415,6 +416,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
             reading: 1,
             english: 1,
             source: 1,
+            segments: 1,
           })
 
         if (!rDict.length) {
@@ -491,6 +493,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           alt: entries.slice(1),
           reading,
           english,
+          segments: [...new Set(rDict.flatMap((r) => r.segments))],
         }
       }
     )

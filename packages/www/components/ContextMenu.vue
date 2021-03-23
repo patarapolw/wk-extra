@@ -106,12 +106,12 @@ import { api } from '@/assets/api'
 @Component
 export default class ContextMenu extends Vue {
   @Prop() id?: string
-  @Prop() entry?: string | string[]
-  @Prop() type?: string
+  @Prop({ required: true }) entry!: string | string[]
+  @Prop({ required: true }) type!: string
   @Prop() source?: string
   @Prop() direction?: string
   @Prop() description?: string
-  @Prop({ default: () => ({}) }) pinyin!: Record<string, string>
+  @Prop({ default: () => ({}) }) reading!: Record<string, string>
   @Prop({ default: () => ({}) }) english!: Record<string, string>
 
   @Prop({ default: () => [] }) additional!: {
@@ -152,22 +152,13 @@ export default class ContextMenu extends Vue {
   }
 
   async setQuiz() {
-    if (this.entry && this.type) {
+    if (this.entries.length && this.type) {
       const {
         data: { result },
-      } = await api.get<{
-        result: {
-          id: string
-          entry: string
-        }[]
-      }>('/api/quiz/many', {
-        params: {
-          entries: this.entries,
-          select: ['id', 'entry'],
-          type: this.type,
-          source: this.source,
-          direction: this.direction,
-        },
+      } = await api.quizGetByEntries(null, {
+        entry: this.entries,
+        type: this.type,
+        direction: this.direction ? [this.direction] : [],
       })
 
       const entryMap = new Map<string, string[]>()
@@ -208,14 +199,12 @@ export default class ContextMenu extends Vue {
 
   async doDelete() {
     if (this.id) {
-      await api.delete('/api/extra', {
-        params: {
-          id: this.id,
-        },
+      await api.entryDelete({
+        id: this.id,
       })
     }
 
-    await this.$emit('deleted', this.id)
+    this.$emit('deleted', this.id)
   }
 
   async doSpeak() {
@@ -226,50 +215,33 @@ export default class ContextMenu extends Vue {
 
   async addToQuiz() {
     if (this.entries.length && this.type) {
-      const {
-        data: { result },
-      } = await api.put<{
-        result: {
-          ids: string[]
-          entry: string
-        }[]
-      }>('/api/quiz', {
-        entries: this.entries,
+      await api.quizCreate(null, {
+        entry: this.entries.map((entry) => {
+          return {
+            entry,
+            reading: this.reading[entry] ? [this.reading[entry]] : [],
+            english: this.english[entry] ? [this.english[entry]] : [],
+          }
+        }),
         type: this.type,
-        source: this.source,
         description: this.description,
-        pinyin: this.pinyin,
-        english: this.english,
       })
 
-      this.$buefy.snackbar.open(
-        `Added ${this.type}: ${this.entries.slice(0, 3).join(', ')}${
-          this.entries.length > 3 ? '...' : ''
-        } to quiz`
-      )
-
-      this.quiz = {
-        ...this.quiz,
-        db: result,
-      }
+      await this.setQuiz()
 
       this.$emit('quiz:added', {
         entries: this.entries,
         type: this.type,
-        db: result,
+        db: this.quiz.db,
       })
     }
   }
 
   async removeFromQuiz() {
-    const ids = this.quiz.db.reduce(
-      (prev, c) => [...prev, ...c.ids],
-      [] as string[]
-    )
-
-    if (this.entries.length && this.type && ids.length) {
-      await api.post('/api/quiz/delete', {
-        ids,
+    if (this.entries.length && this.type) {
+      await api.quizDeleteByEntries(null, {
+        entry: this.entries,
+        type: this.type,
       })
 
       this.$buefy.snackbar.open(
