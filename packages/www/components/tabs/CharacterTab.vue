@@ -268,7 +268,11 @@ export default class CharacterTab extends Vue {
         {
           name: 'Reload',
           handler: async () => {
-            this.q0 = await api.characterRandom().then((r) => r.data.result)
+            this.q0 = await api
+              .entryRandom({
+                type: 'character',
+              })
+              .then((r) => r.data.result)
           },
         },
       ]
@@ -294,7 +298,15 @@ export default class CharacterTab extends Vue {
       const qs = q.split('').filter((h) => /\p{sc=Han}/u.test(h))
       this.entries = qs.filter((h, i) => qs.indexOf(h) === i)
     } else {
-      this.entries = await api.characterQuery({ q }).then((r) => r.data.result)
+      this.entries = await api
+        .entryQuery({
+          q,
+          type: 'character',
+          select: 'entry',
+          limit: -1,
+          all: true,
+        })
+        .then((r) => r.data.result.map((rs) => rs.entry))
     }
 
     this.i = 0
@@ -316,7 +328,7 @@ export default class CharacterTab extends Vue {
 
   async loadCharacter() {
     const r = await api
-      .characterGetOne({ entry: this.current })
+      .characterRadical({ entry: this.current })
       .then((r) => r.data)
 
     this.sub = r.sub

@@ -67,7 +67,7 @@ declare namespace Paths {
         kana: string;
       }[];
       english: string[];
-      audio: string[];
+      audio?: string[];
       type: "character" | "vocabulary" | "sentence";
       description: string;
       tag: string[];
@@ -136,12 +136,29 @@ declare namespace Paths {
       }
     }
   }
+  namespace EntryListLevel {
+    namespace Parameters {
+      export type Type = "character" | "vocabulary";
+    }
+    export interface QueryParameters {
+      type: Parameters.Type;
+    }
+    namespace Responses {
+      export interface $200 {
+        result: {
+          entry: string;
+          level: number;
+        }[];
+      }
+    }
+  }
   namespace EntryQuery {
     namespace Parameters {
       export type All = boolean;
       export type Limit = number;
       export type Page = number;
       export type Q = string;
+      export type Select = string;
       export type Type = "character" | "vocabulary" | "sentence";
     }
     export interface QueryParameters {
@@ -150,20 +167,25 @@ declare namespace Paths {
       limit?: Parameters.Limit;
       all?: Parameters.All;
       type?: Parameters.Type;
+      select: Parameters.Select;
     }
     namespace Responses {
       export interface $200 {
         result: {
           id: string;
-          entry: string[];
+          entry: string;
+          alt: string[];
           reading: {
             type?: string;
             kana: string;
           }[];
           english: string[];
           type: string;
+          description: string;
           source?: string;
+          tag: string[];
         }[];
+        count: number;
       }
     }
   }
@@ -197,7 +219,7 @@ declare namespace Paths {
         kana: string;
       }[];
       english: string[];
-      audio: string[];
+      audio?: string[];
       type: "character" | "vocabulary" | "sentence";
       description: string;
       tag: string[];
@@ -270,7 +292,10 @@ declare namespace Paths {
           title: string;
           entries: string[];
           type: string;
+          description: string;
+          tag: string[];
         }[];
+        count: number;
       }
     }
   }
@@ -390,6 +415,29 @@ declare namespace Paths {
           entry: string;
           srsLevel: number;
         }[];
+      }
+    }
+  }
+  namespace UserSettings {
+    namespace Parameters {
+      export type Select = string;
+    }
+    export interface QueryParameters {
+      select: Parameters.Select;
+    }
+    namespace Responses {
+      export interface $200 {
+        levelDisplayVocab?: string[];
+      }
+    }
+  }
+  namespace UserUpdate {
+    export interface RequestBody {
+      levelDisplayVocab?: string[];
+    }
+    namespace Responses {
+      export interface $201 {
+        result: string;
       }
     }
   }
@@ -522,6 +570,14 @@ export interface OperationMethods {
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.EntryRandom.Responses.$200>
   /**
+   * entryListLevel
+   */
+  'entryListLevel'(
+    parameters?: Parameters<Paths.EntryListLevel.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.EntryListLevel.Responses.$200>
+  /**
    * libraryGetOne
    */
   'libraryGetOne'(
@@ -609,6 +665,22 @@ export interface OperationMethods {
     data?: Paths.QuizGetSrsLevelByEntries.RequestBody,
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.QuizGetSrsLevelByEntries.Responses.$200>
+  /**
+   * userSettings
+   */
+  'userSettings'(
+    parameters?: Parameters<Paths.UserSettings.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.UserSettings.Responses.$200>
+  /**
+   * userUpdate
+   */
+  'userUpdate'(
+    parameters?: Parameters<UnknownParamsObject> | null,
+    data?: Paths.UserUpdate.RequestBody,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.UserUpdate.Responses.$201>
   /**
    * utilTokenize
    */
@@ -750,6 +822,16 @@ export interface PathsDictionary {
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.EntryRandom.Responses.$200>
   }
+  ['/api/entry/level']: {
+    /**
+     * entryListLevel
+     */
+    'get'(
+      parameters?: Parameters<Paths.EntryListLevel.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.EntryListLevel.Responses.$200>
+  }
   ['/api/library/id']: {
     /**
      * libraryGetOne
@@ -855,6 +937,24 @@ export interface PathsDictionary {
       data?: Paths.QuizGetSrsLevelByEntries.RequestBody,
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.QuizGetSrsLevelByEntries.Responses.$200>
+  }
+  ['/api/user/']: {
+    /**
+     * userSettings
+     */
+    'get'(
+      parameters?: Parameters<Paths.UserSettings.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.UserSettings.Responses.$200>
+    /**
+     * userUpdate
+     */
+    'patch'(
+      parameters?: Parameters<UnknownParamsObject> | null,
+      data?: Paths.UserUpdate.RequestBody,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.UserUpdate.Responses.$201>
   }
   ['/api/util/tokenize']: {
     /**

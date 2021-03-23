@@ -39,6 +39,8 @@ class User {
   )[]
 
   @prop({ default: 1 }) levelMin?: number
+
+  @prop() levelDisplayVocab?: string[]
 }
 
 export const UserModel = getModelForClass(User, {

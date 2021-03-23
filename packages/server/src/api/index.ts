@@ -13,6 +13,7 @@ import characterRouter from './character'
 import entryRouter from './entry'
 import libraryRouter from './library'
 import quizRouter from './quiz'
+import userRouter from './user'
 import utilRouter from './util'
 import vocabularyRouter from './vocabulary'
 
@@ -143,6 +144,7 @@ const apiRouter: FastifyPluginAsync = async (f) => {
   f.register(entryRouter, { prefix: '/entry' })
   f.register(libraryRouter, { prefix: '/library' })
   f.register(quizRouter, { prefix: '/quiz' })
+  f.register(userRouter, { prefix: '/user' })
   f.register(utilRouter, { prefix: '/util' })
   f.register(vocabularyRouter, { prefix: '/vocabulary' })
 }

@@ -247,8 +247,11 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
           title: S.string(),
           entries: S.list(S.string()),
           type: S.string(),
+          description: S.string(),
+          tag: S.list(S.string()),
         })
       ),
+      count: S.integer(),
     })
 
     const makeQuiz = new QSplit({
@@ -290,7 +293,7 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
         q = q.trim()
 
         if (!q) {
-          return { result: [] }
+          return { result: [], count: 0 }
         }
 
         const makeJa = new QSplit({
@@ -396,32 +399,46 @@ const libraryRouter: FastifyPluginAsync = async (f) => {
             },
           },
           dCond,
-          { $sort: { 'lib.updatedAt': -1 } },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
           {
-            $lookup: {
-              from: 'Library',
-              localField: 'lib._id',
-              foreignField: '_id',
-              as: 'lib2',
-            },
-          },
-          {
-            $project: {
-              _id: '$lib._id',
-              title: '$lib.title',
-              entries: { $first: 'lib2.entries' },
-              type: '$lib.type',
+            $facet: {
+              result: [
+                { $sort: { 'lib.updatedAt': -1 } },
+                { $skip: (page - 1) * limit },
+                { $limit: limit },
+                {
+                  $lookup: {
+                    from: 'Library',
+                    localField: 'lib._id',
+                    foreignField: '_id',
+                    as: 'lib2',
+                  },
+                },
+                {
+                  $project: {
+                    _id: '$lib._id',
+                    title: '$lib.title',
+                    entries: { $first: 'lib2.entries' },
+                    type: '$lib.type',
+                    description: { $first: 'lib2.description' },
+                    tag: { $first: 'lib2.tag' },
+                  },
+                },
+              ],
+              count: [{ $count: 'count' }],
             },
           },
         ])
 
+        if (!rs[0]) {
+          return { result: [], count: 0 }
+        }
+
         return {
-          result: rs.map((r) => ({
+          result: rs[0].result.map((r: any) => ({
             ...r,
             id: r._id,
           })),
+          count: rs[0].count[0].count,
         }
       }
     )

@@ -176,15 +176,13 @@ export default class LevelTab extends Vue {
 
   async init() {
     const {
-      data: { 'settings.level.whatToShow': whatToShow = null },
-    } = await api.get('/api/user', {
-      params: {
-        select: ['settings.level.whatToShow'],
-      },
+      data: { levelDisplayVocab = [] },
+    } = await api.userSettings({
+      select: 'levelDisplayVocab',
     })
 
-    if (whatToShow) {
-      this.whatToShow = (whatToShow as unknown) as string
+    if (levelDisplayVocab.length) {
+      this.whatToShow = levelDisplayVocab[0]
     }
 
     await this.reload([])
@@ -195,13 +193,9 @@ export default class LevelTab extends Vue {
     if (this.currentData.length === 0) {
       const {
         data: { result },
-      } = await api.get<{
-        result: {
-          entry: string
-          source?: string
-          level: number
-        }[]
-      }>('/api/vocab/level')
+      } = await api.entryListLevel({
+        type: 'vocabulary',
+      })
 
       entries = result.map(({ entry, level }) => {
         const lv = level.toString()
@@ -218,20 +212,14 @@ export default class LevelTab extends Vue {
     if (entries.length > 0) {
       const {
         data: { result = [] },
-      } = await api.post<{
-        result: {
-          entry: string
-          srsLevel: number | null
-        }[]
-      }>('/api/quiz/srsLevel', {
-        entries,
-        type: 'vocab',
-        select: ['entry', 'srsLevel'],
+      } = await api.quizGetSrsLevelByEntries(null, {
+        entry: entries,
+        type: 'vocabulary',
       })
 
       // eslint-disable-next-line array-callback-return
       entries.map((entry) => {
-        delete this.srsLevel[entry]
+        this.srsLevel[entry] = -1
       })
 
       // eslint-disable-next-line array-callback-return
@@ -247,8 +235,8 @@ export default class LevelTab extends Vue {
   async onWhatToShowChanged() {
     this.setCurrentData()
 
-    await api.patch('/api/user', {
-      'settings.level.whatToShow': this.whatToShow,
+    await api.userUpdate(null, {
+      levelDisplayVocab: [this.whatToShow],
     })
   }
 }

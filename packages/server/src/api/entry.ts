@@ -87,7 +87,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         })
       ),
       english: S.list(S.string()),
-      audio: S.list(S.string()),
+      audio: S.list(S.string()).optional(),
       type: S.string().enum('character', 'vocabulary', 'sentence'),
       description: S.string(),
       tag: S.list(S.string()),
@@ -115,7 +115,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           type,
           description,
           tag,
-          audio,
+          audio = [],
         } = req.body
 
         const userId: string = req.session.get('userId')
@@ -200,7 +200,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         })
       ),
       english: S.list(S.string()),
-      audio: S.list(S.string()),
+      audio: S.list(S.string()).optional(),
       type: S.string().enum('character', 'vocabulary', 'sentence'),
       description: S.string(),
       tag: S.list(S.string()),
@@ -235,7 +235,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           type,
           description,
           tag,
-          audio,
+          audio = [],
         } = req.body
 
         const userId: string = req.session.get('userId')
@@ -506,13 +506,17 @@ const entryRouter: FastifyPluginAsync = async (f) => {
       limit: S.integer().optional(),
       all: S.boolean().optional(),
       type: S.string().enum('character', 'vocabulary', 'sentence').optional(),
+      select: S.string().description(
+        'Comma separated: entry, alt, reading, english, type, description, source, tag'
+      ),
     })
 
     const sResult = S.shape({
       result: S.list(
         S.shape({
           id: S.string(),
-          entry: S.list(S.string()),
+          entry: S.string(),
+          alt: S.list(S.string()),
           reading: S.list(
             S.shape({
               type: S.string().optional(),
@@ -521,9 +525,12 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           ),
           english: S.list(S.string()),
           type: S.string(),
+          description: S.string(),
           source: S.string().optional(),
+          tag: S.list(S.string()),
         })
       ),
+      count: S.integer(),
     })
 
     const makeRad = new QSplit({
@@ -585,12 +592,16 @@ const entryRouter: FastifyPluginAsync = async (f) => {
         },
       },
       async (req): Promise<typeof sResult.type> => {
-        const { page = 1, limit = 10, all, type } = req.query
+        const { page = 1, limit = 10, all, type, select } = req.query
         let { q } = req.query
 
         const userId: string = req.session.get('userId')
         if (!userId) {
           throw { statusCode: 401 }
+        }
+
+        if (!select) {
+          throw { statusCode: 400, message: 'select is required' }
         }
 
         q = q.trim()
@@ -608,7 +619,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
                 .then((rs) => rs.map((r) => r.entry))
 
               if (!entries?.length) {
-                return { result: [] }
+                return { result: [], count: 0 }
               }
             }
           }
@@ -710,32 +721,49 @@ const entryRouter: FastifyPluginAsync = async (f) => {
                 { $match: { 'q.0': { $exists: true } } },
               ]
             : []),
-          { $sort: { updatedAt: -1 } },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
           {
-            $project: {
-              entry: 1,
-              reading: 1,
-              english: 1,
-              type: 1,
-              source: 1,
+            $facet: {
+              result: [
+                { $sort: { updatedAt: -1 } },
+                ...(limit !== -1
+                  ? [{ $skip: (page - 1) * limit }, { $limit: limit }]
+                  : []),
+                {
+                  $project: select
+                    .split(',')
+                    .reduce(
+                      (prev, k) => ({ ...prev, [k]: 1 }),
+                      {} as Record<string, number>
+                    ),
+                },
+              ],
+              count: [{ $count: 'count' }],
             },
           },
         ])
+
+        if (!rs[0]) {
+          return {
+            result: [],
+            count: 0,
+          }
+        }
 
         const rMap: Record<
           'user' | 'wanikani' | 'others',
           {
             id: string
-            entry: string[]
+            entry: string
+            alt: string[]
             reading: {
               type?: string
               kana: string
             }[]
             english: string[]
             type: string
+            description: string
             source?: string
+            tag: string[]
           }[]
         > = {
           user: [],
@@ -743,16 +771,19 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           others: [],
         }
 
-        rs.map((d) => {
+        rs[0].result.map((d: any) => {
           const v = {
             id: d._id,
-            entry: d.entry,
+            entry: d.entry[0],
+            alt: d.entry.slice(1),
             reading: (d.reading as any[])
               .filter((r) => !r.hidden)
               .map(({ type, kana }) => ({ type, kana })),
             english: d.english,
             type: d.type,
+            description: d.description,
             source: d.source,
+            tag: d.tag,
           }
 
           switch (d.source) {
@@ -769,6 +800,7 @@ const entryRouter: FastifyPluginAsync = async (f) => {
 
         return {
           result: [...rMap.user, ...rMap.wanikani, ...rMap.others],
+          count: rs[0].count[0].count,
         }
       }
     )
@@ -838,6 +870,60 @@ const entryRouter: FastifyPluginAsync = async (f) => {
           result: r.result,
           english: r.english.join(' / '),
           level: r.level,
+        }
+      }
+    )
+  }
+
+  {
+    const sQuery = S.shape({
+      type: S.string().enum('character', 'vocabulary'),
+    })
+
+    const sResult = S.shape({
+      result: S.list(
+        S.shape({
+          entry: S.string(),
+          level: S.integer(),
+        })
+      ),
+    })
+
+    f.get<{
+      Querystring: typeof sQuery.type
+    }>(
+      '/level',
+      {
+        schema: {
+          operationId: 'entryListLevel',
+          querystring: sQuery.valueOf(),
+          response: { 200: sResult.valueOf() },
+        },
+      },
+      async (req): Promise<typeof sResult.type> => {
+        const { type } = req.query
+
+        const result = await EntryModel.aggregate([
+          {
+            $match: {
+              level: { $exists: true },
+              type,
+            },
+          },
+          { $unwind: '$entry' },
+          {
+            $group: {
+              _id: '$entry',
+              level: { $min: '$level' },
+            },
+          },
+        ])
+
+        return {
+          result: result.map((r) => ({
+            entry: r._id,
+            level: r.level,
+          })),
         }
       }
     )

@@ -118,17 +118,9 @@
 import { Component, Ref, Vue, Watch } from 'nuxt-property-decorator'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { api } from '~/assets/api'
+import type { Paths } from '~/types/openapi'
 
-interface IExtra {
-  id?: string
-  entry: string
-  alt: string
-  reading: string
-  english: string
-  type: 'character' | 'vocabulary' | 'sentence'
-  description: string
-  tag: string
-}
+type IExtra = Paths.EntryQuery.Responses.$200['result'][0]
 
 @Component
 export default class BrowseTab extends Vue {
@@ -156,12 +148,12 @@ export default class BrowseTab extends Vue {
   selected: IExtra = {
     id: '',
     entry: '',
-    alt: '',
-    reading: '',
-    english: '',
+    alt: [],
+    reading: [],
+    english: [],
     type: 'vocabulary',
     description: '',
-    tag: '',
+    tag: [],
   }
 
   additionalContext = [
@@ -189,10 +181,14 @@ export default class BrowseTab extends Vue {
   }
 
   async openEditModal() {
-    if (!this.selected.reading && this.selected.entry) {
-      this.selected.reading = await api
-        .utilReading({ q: this.selected.entry })
-        .then((r) => r.data.result)
+    if (!this.selected.reading.length && this.selected.entry) {
+      this.selected.reading = [
+        {
+          kana: await api
+            .utilReading({ q: this.selected.entry })
+            .then((r) => r.data.result),
+        },
+      ]
     }
 
     this.isEditModal = true
@@ -204,22 +200,11 @@ export default class BrowseTab extends Vue {
   async load() {
     const {
       data: { result, count },
-    } = await api.get('/api/extra/q', {
-      params: {
-        q: this.q,
-        page: this.page,
-        perPage: this.perPage,
-        sort: [`${this.sort.type === 'desc' ? '-' : ''}${this.sort.key}`],
-        select: [
-          'id',
-          'chinese',
-          'pinyin',
-          'english',
-          'type',
-          'description',
-          'tag',
-        ],
-      },
+    } = await api.entryQuery({
+      q: this.q,
+      page: this.page,
+      limit: this.perPage,
+      select: 'entry,alt,reading,english,type,description,tag',
     })
 
     this.tableData = result
@@ -227,42 +212,32 @@ export default class BrowseTab extends Vue {
   }
 
   async doCreate() {
-    this.selected.description = this.selected.description || ' '
-    this.selected.tag = this.selected.tag || ' '
-
     const {
-      data: { existing, id },
-    } = await api.put('/api/extra', this.selected)
+      data: { id },
+    } = await api.entryCreate(null, {
+      ...this.selected,
+      type: this.selected.type as any,
+    })
 
-    if (id) {
-      await this.context.addToQuiz()
-      this.$buefy.snackbar.open(`Added extra: ${this.selected.entry} to quiz`)
+    this.selected.id = id
 
-      await this.load()
-    } else if (existing) {
-      const { type, entry } = existing
-      await api.put('/api/quiz', {
-        entries: [entry],
-        type,
-        source: 'extra',
-      })
-
-      this.$buefy.snackbar.open(`Added ${type}: ${entry} to quiz`)
-    }
+    await this.context.addToQuiz()
+    this.$buefy.snackbar.open(`Added ${this.selected.entry} to quiz`)
 
     this.isEditModal = false
     await this.load()
   }
 
   async doUpdate() {
-    this.selected.description = this.selected.description || ' '
-    this.selected.tag = this.selected.tag || ' '
-
-    await api.patch('/api/extra', this.selected, {
-      params: {
+    await api.entryUpdate(
+      {
         id: this.selected.id,
       },
-    })
+      {
+        ...this.selected,
+        type: this.selected.type as any,
+      }
+    )
 
     this.$buefy.snackbar.open(`Updated extra: ${this.selected.entry}`)
 
@@ -271,10 +246,8 @@ export default class BrowseTab extends Vue {
   }
 
   async doDelete() {
-    await api.delete('/api/extra', {
-      params: {
-        id: this.selected.id,
-      },
+    await api.entryDelete({
+      id: this.selected.id,
     })
 
     this.$buefy.snackbar.open(`Deleted extra: ${this.selected.entry}`)
@@ -286,12 +259,12 @@ export default class BrowseTab extends Vue {
     this.selected = {
       id: '',
       entry: '',
-      alt: '',
-      reading: '',
-      english: '',
+      alt: [],
+      reading: [],
+      english: [],
       type: 'vocabulary',
       description: '',
-      tag: '',
+      tag: [],
     }
 
     this.isEditModal = true

@@ -132,14 +132,9 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'nuxt-property-decorator'
 import { api } from '~/assets/api'
+import { Paths } from '~/types/openapi'
 
-interface ILocal {
-  id: string
-  title: string
-  entries: string[]
-  description: string
-  tag: string
-}
+type ILocal = Paths.LibraryQuery.Responses.$200['result'][0]
 
 @Component
 export default class LibraryTab extends Vue {
@@ -178,7 +173,8 @@ export default class LibraryTab extends Vue {
     title: '',
     entries: [],
     description: '',
-    tag: '',
+    tag: [],
+    type: 'vocabulary',
   }
 
   get q() {
@@ -233,7 +229,8 @@ export default class LibraryTab extends Vue {
       title: '',
       entries: [],
       description: '',
-      tag: '',
+      tag: [],
+      type: 'vocabulary',
     }
 
     this.isEditModal = true
@@ -261,12 +258,10 @@ export default class LibraryTab extends Vue {
   @Watch('q')
   @Watch('online.page')
   async updateOnline() {
-    const r = await api.get('/api/library/shared', {
-      params: {
-        q: this.q,
-        page: this.online.page,
-        perPage: this.online.perPage,
-      },
+    const r = await api.libraryQuery({
+      q: this.q,
+      page: this.online.page,
+      limit: this.online.perPage,
     })
 
     this.online = {
@@ -276,7 +271,7 @@ export default class LibraryTab extends Vue {
   }
 
   async doCreate() {
-    await api.put('/api/library', this.edited)
+    await api.libraryCreate(null, this.edited)
     this.$buefy.snackbar.open(`Created list: ${this.edited.title}`)
     this.isEditModal = false
 
@@ -285,11 +280,7 @@ export default class LibraryTab extends Vue {
   }
 
   async doUpdate() {
-    await api.patch('/api/library', this.edited, {
-      params: {
-        id: this.edited.id,
-      },
-    })
+    await api.libraryUpdate(this.edited.id, this.edited)
 
     this.$buefy.snackbar.open(`Updated list: ${this.edited.title}`)
     this.isEditModal = false
@@ -299,10 +290,8 @@ export default class LibraryTab extends Vue {
   }
 
   async doDelete(id: string) {
-    await api.delete('/api/library', {
-      params: {
-        id,
-      },
+    await api.libraryDelete({
+      id,
     })
 
     this.$buefy.snackbar.open(`Deleted list: ${this.edited.title}`)
