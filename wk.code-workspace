@@ -4,7 +4,16 @@
       "path": "."
     },
     {
+      "path": "packages/api-v2"
+    },
+    {
       "path": "packages/python"
-    }
-  ]
+    },
+    {
+      "path": "packages/server"
+    },
+  ],
+  "settings": {
+    "git.ignoreLimitWarning": true
+  }
 }

@@ -34,3 +34,5 @@ Temporary Items
 
 .env
 *.key
+
+node_modules/
