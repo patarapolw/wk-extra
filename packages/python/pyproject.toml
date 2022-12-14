@@ -7,12 +7,12 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-fastapi = "^0.63.0"
-regex = "^2020.11.13"
-wordfreq = "^2.3.2"
+fastapi = "^0.88.0"
+regex = "^2022.10.31"
+wordfreq = "^3.0.3"
 jieba = "^0.42.1"
-uvicorn = "^0.13.3"
-mecab-python3 = "^1.0.3"
+uvicorn = "^0.20.0"
+mecab-python3 = "^1.0.6"
 
 [tool.poetry.dev-dependencies]
 
